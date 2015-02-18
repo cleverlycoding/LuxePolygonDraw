@@ -1,0 +1,26 @@
+{
+
+  project : {
+    name : 'PolygonDraw',
+    version : '1.0.0',
+    author : 'ledoux',
+
+    app : {
+      name : 'polygondraw',
+      package : 'org.ledoux.polygondraw'
+    },
+
+    build : {
+      dependencies : {
+        luxe : '*',
+        poly2trihx : '*'
+      }
+    },
+
+    files : {
+      assets : 'assets/'
+    }
+
+  }
+
+}
