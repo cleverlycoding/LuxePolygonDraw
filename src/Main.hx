@@ -6,7 +6,7 @@ import luxe.Color;
 import luxe.Vector;
 import luxe.utils.Maths;
 import phoenix.geometry.*;
-import phoenix.Batcher; //necessary to access PrimitiveType
+import phoenix.Batcher;
 
 //HAXE
 import sys.io.File;
@@ -289,6 +289,179 @@ class Main extends luxe.Game {
 		Luxe.renderer.batcher.remove(curLine.geometry);
 		curLine = null;
 		isDrawing = false;
+    }
+
+    class DrawState extends State {
+        override function onkeydown(e:KeyEvent) {
+            if (e.keycode == Key.key_z) {
+                //Undo
+                Edit.Undo();
+            }
+            else if (e.keycode == Key.key_x) {
+                //Redo
+                Edit.Redo();
+            }
+            else if (e.keycode == Key.key_a) {
+                //Go up a layer
+                switchLayerSelection(-1);
+            }
+            else if (e.keycode == Key.key_s) {
+                //Go down a layer
+                switchLayerSelection(1);
+            }
+            else if (e.keycode == Key.key_p) {
+                //Delete selected layer
+                if (layers.getNumLayers() > 0) {    
+                    Edit.RemoveLayer(layers, curLayer);
+                    switchLayerSelection(-1);
+                }
+            }
+            else if (e.keycode == Key.key_q) {
+                //Move selected layer down the stack
+                if (curLayer > 0) {
+                    Edit.MoveLayer(layers, curLayer, -1);
+                    switchLayerSelection(-1);
+                }
+            }
+            else if (e.keycode == Key.key_w) {
+                //Move selected layer up the stack
+                if (curLayer < layers.getNumLayers() - 1) {
+                    Edit.MoveLayer(layers, curLayer, 1);    
+                    switchLayerSelection(1);
+                }
+            }
+            else if (e.keycode == Key.key_l) {
+                //Switch color picker mode
+                if (isPickingColor) {
+                    addColorToList(picker.pickedColor);
+                }
+                colorPickerMode(!isPickingColor);
+            }
+            else if (e.keycode == Key.key_j) {
+                //prev color
+                navigateColorList(-1);
+            }
+            else if (e.keycode == Key.key_k) {
+                //next color
+                navigateColorList(1);
+            }
+            else if (e.keycode == Key.key_m) {
+                //pick up color
+                var tmp = layers.getLayer(curLayer).color.clone().toColorHSV();
+                picker.pickedColor = tmp;
+                slider.value = tmp.v;
+
+                addColorToList(picker.pickedColor);
+            }
+            else if (e.keycode == Key.key_n) {
+                //drop color
+                //layers.getLayer(curLayer).color = picker.pickedColor.clone();
+                Edit.ChangeColor(layers.getLayer(curLayer), picker.pickedColor.clone());
+            }
+            else if (e.keycode == Key.key_1) {
+                //save
+                var output = File.write(Luxe.core.app.io.platform.dialog_save() + ".json", false);
+
+                var outObj = layers.getJsonRepresentation();
+                var outStr = haxe.Json.stringify(outObj);
+                output.writeString(outStr);
+
+                output.close();
+            }
+            else if (e.keycode == Key.key_2) {
+                //load
+                var input = File.read(Luxe.core.app.io.platform.dialog_open(), false);
+
+                var inStr = input.readLine();
+                var inObj = haxe.Json.parse(inStr);
+
+                for (l in cast(inObj.layers, Array<Dynamic>)) {
+                    Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
+                    switchLayerSelection(1);
+                }
+
+                input.close();
+            }
+            else if (e.keycode == Key.minus) {
+                //zoom out
+                Luxe.renderer.camera.zoom *= 0.5;
+            }
+            else if (e.keycode == Key.equals) {
+                //zoom in
+                Luxe.renderer.camera.zoom *= 2;
+            }
+        }
+
+        override function onmousedown(e:MouseEvent) {
+            var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
+
+            if (!isDrawing) {
+                curLine = new Polyline({color: picker.pickedColor.clone(), depth: aboveLayersDepth+1}, [mousepos]);
+                isDrawing = true;
+            }
+            else {
+                addPointToCurrentLine(mousepos);
+            }
+        }
+
+        override function onmousemove(e:MouseEvent) {
+            var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
+
+            if (isDrawing && Luxe.input.mousedown(1)) {
+
+                if (curLine.getEndPoint().distance(mousepos) >= minLineLength) {
+                    addPointToCurrentLine(mousepos);
+                }
+            }
+        }
+    }
+
+    class EditState extends State {
+        
+    }
+
+    class PickColorState extends State {
+        override function onkeydown(e:KeyEvent) {
+            else if (e.keycode == Key.key_l) {
+                //Switch color picker mode
+                if (isPickingColor) {
+                    addColorToList(picker.pickedColor);
+                }
+                colorPickerMode(!isPickingColor);
+            }
+            else if (e.keycode == Key.key_j) {
+                //prev color
+                navigateColorList(-1);
+            }
+            else if (e.keycode == Key.key_k) {
+                //next color
+                navigateColorList(1);
+            }
+            else if (e.keycode == Key.key_1) {
+                //save
+                var output = File.write(Luxe.core.app.io.platform.dialog_save() + ".json", false);
+
+                var outObj = layers.getJsonRepresentation();
+                var outStr = haxe.Json.stringify(outObj);
+                output.writeString(outStr);
+
+                output.close();
+            }
+            else if (e.keycode == Key.key_2) {
+                //load
+                var input = File.read(Luxe.core.app.io.platform.dialog_open(), false);
+
+                var inStr = input.readLine();
+                var inObj = haxe.Json.parse(inStr);
+
+                for (l in cast(inObj.layers, Array<Dynamic>)) {
+                    Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
+                    switchLayerSelection(1);
+                }
+
+                input.close();
+            }
+        }
     }
 
 } //Main	

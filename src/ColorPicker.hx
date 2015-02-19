@@ -14,7 +14,6 @@ class ColorPicker extends Visual {
 	var _radius : Float;
 
 	var _selector : RingGeometry;
-	var _isMouseDown : Bool;
 
 	public var onColorChange : Dynamic;
 
@@ -56,23 +55,17 @@ class ColorPicker extends Visual {
 			if (pos.distance(e.pos) < _radius) { //replace with collision shape?
 				updatePickedColor(e.pos);
 				_selector.transform.pos = Vector.Divide(Vector.Subtract(e.pos, pos), _radius);
-
-				_isMouseDown = true;
 			}
 		}
 	}
 
 	override function onmousemove(e : MouseEvent) {
-		if (visible && _isMouseDown) {
+		if (visible && Luxe.input.mousedown(1)) {
 			if (pos.distance(e.pos) < _radius) { //replace with collision shape?
 				updatePickedColor(e.pos);
 				_selector.transform.pos = Vector.Divide(Vector.Subtract(e.pos, pos), _radius);
 			}
 		}
-	}
-
-	override function onmouseup(e : MouseEvent) {
-		_isMouseDown = false;
 	}
 
 	function updatePickedColor(point : Vector) {
