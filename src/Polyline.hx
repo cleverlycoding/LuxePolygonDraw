@@ -9,7 +9,7 @@ import phoenix.Batcher; //necessary to access PrimitiveType
 class Polyline extends Visual {
 	var points:Array<Vector>;
 
-	override function new(_options:luxe.options.VisualOptions, points:Array<Vector>) {
+	public override function new(_options:luxe.options.VisualOptions, points:Array<Vector>) {
 		super(_options);
 
 		this.points = points;

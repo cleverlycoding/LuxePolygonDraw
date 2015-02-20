@@ -7,6 +7,7 @@ import luxe.Vector;
 import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher;
+import luxe.States;
 
 //HAXE
 import sys.io.File;
@@ -28,7 +29,7 @@ class Main extends luxe.Game {
 	//drawing
 	var curLine : Polyline;
 	var minLineLength = 20;
-	var isDrawing : Bool;
+	public var isDrawing : Bool;
 
 	//layers
 	var layers = new LayerManager(0, 1, 1000);
@@ -39,15 +40,21 @@ class Main extends luxe.Game {
 	//color picker
 	var picker : ColorPicker;
 	var slider : Slider;
-	var isPickingColor : Bool;
 	var curColorIcon : QuadGeometry;
 	var colorList : Array<ColorHSV> = [];
 	var colorIndex : Int;
 
+    //editting
+    var dragMouseStartPos : Vector;
+
     //UI
     var uiBatcher : Batcher;
 
+    //STATES
+    var machine : States;
+
     override function ready() {
+
     	//instantiate objects
         selectedLayerOutline = new Polyline({depth: aboveLayersDepth}, []);
 
@@ -57,99 +64,17 @@ class Main extends luxe.Game {
         Luxe.renderer.state.lineWidth(2);
 
         //UI
-        createUI();        
+        createUI();  
+
+        //STATES
+        machine = new States({name:"statemachine"});
+        machine.add(new DrawState({name:"draw"}));
+        machine.add(new PickColorState({name:"pickcolor"}));
+        machine.add(new EditState({name:"edit"}));
+        machine.set("draw", this);
     } //ready
 
     override function onkeydown(e:KeyEvent) {
-    	if (e.keycode == Key.key_z) {
-    		Edit.Undo();
-    	}
-    	else if (e.keycode == Key.key_x) {
-    		Edit.Redo();
-    	}
-    	else if (e.keycode == Key.key_a) {
-    		switchLayerSelection(-1);
-    	}
-    	else if (e.keycode == Key.key_s) {
-    		switchLayerSelection(1);
-    	}
-    	else if (e.keycode == Key.key_p) {
-    		if (layers.getNumLayers() > 0) {	
-	    		Edit.RemoveLayer(layers, curLayer);
-	    		switchLayerSelection(-1);
-    		}
-    	}
-    	else if (e.keycode == Key.key_q) {
-    		if (curLayer > 0) {
-	    		Edit.MoveLayer(layers, curLayer, -1);
-	    		switchLayerSelection(-1);
-    		}
-    	}
-    	else if (e.keycode == Key.key_w) {
-    		if (curLayer < layers.getNumLayers() - 1) {
-	    		Edit.MoveLayer(layers, curLayer, 1);	
-	    		switchLayerSelection(1);
-    		}
-    	}
-    	else if (e.keycode == Key.key_l) {
-    		if (isPickingColor) {
-    			addColorToList(picker.pickedColor);
-    		}
-    		colorPickerMode(!isPickingColor);
-    	}
-    	else if (e.keycode == Key.key_j) {
-    		//prev color
-    		navigateColorList(-1);
-    	}
-    	else if (e.keycode == Key.key_k) {
-    		//next color
-    		navigateColorList(1);
-    	}
-    	else if (e.keycode == Key.key_m) {
-    		//pick up color
-    		var tmp = layers.getLayer(curLayer).color.clone().toColorHSV();
-    		picker.pickedColor = tmp;
-    		slider.value = tmp.v;
-
-    		addColorToList(picker.pickedColor);
-    	}
-    	else if (e.keycode == Key.key_n) {
-    		//drop color
-    		//layers.getLayer(curLayer).color = picker.pickedColor.clone();
-    		Edit.ChangeColor(layers.getLayer(curLayer), picker.pickedColor.clone());
-    	}
-    	else if (e.keycode == Key.key_1) {
-    		//save
-    		var output = File.write(Luxe.core.app.io.platform.dialog_save() + ".json", false);
-
-    		var outObj = layers.getJsonRepresentation();
-    		var outStr = haxe.Json.stringify(outObj);
-    		output.writeString(outStr);
-
-    		output.close();
-		}
-		else if (e.keycode == Key.key_2) {
-			//load
-			var input = File.read(Luxe.core.app.io.platform.dialog_open(), false);
-
-			var inStr = input.readLine();
-			var inObj = haxe.Json.parse(inStr);
-
-			for (l in cast(inObj.layers, Array<Dynamic>)) {
-				Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
-    			switchLayerSelection(1);
-			}
-
-			input.close();
-		}
-        else if (e.keycode == Key.minus) {
-            //zoom out
-            Luxe.renderer.camera.zoom *= 0.5;
-        }
-        else if (e.keycode == Key.equals) {
-            //zoom in
-            Luxe.renderer.camera.zoom *= 2;
-        }
     }
 
     override function onkeyup(e:KeyEvent) {
@@ -163,34 +88,12 @@ class Main extends luxe.Game {
     } //update
 
     override function onmousedown(e:MouseEvent) {
-        if (!isPickingColor) { //a crappy way to do this, I know
-
-            var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
-
-            if (!isDrawing) {
-                curLine = new Polyline({color: picker.pickedColor.clone(), depth: aboveLayersDepth+1}, [mousepos]);
-                isDrawing = true;
-            }
-            else {
-                addPointToCurrentLine(mousepos);
-            }
-        }
     }
 
     override function onmousemove(e:MouseEvent) {
-        if (!isPickingColor) {  
-            if (isDrawing && Luxe.input.mousedown(1)) {
-
-                var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
-                if (curLine.getEndPoint().distance(mousepos) >= minLineLength) {
-                    addPointToCurrentLine(mousepos);
-                }
-            }
-        }
     }
 
     override function onmouseup(e:MouseEvent) {
-
     }
 
     function createUI () {
@@ -244,7 +147,6 @@ class Main extends luxe.Game {
     }
 
     function colorPickerMode(on:Bool) {
-    	isPickingColor = on;
     	picker.visible = on;
     	slider.visible = on;
     }
@@ -291,177 +193,279 @@ class Main extends luxe.Game {
 		isDrawing = false;
     }
 
-    class DrawState extends State {
-        override function onkeydown(e:KeyEvent) {
-            if (e.keycode == Key.key_z) {
-                //Undo
-                Edit.Undo();
-            }
-            else if (e.keycode == Key.key_x) {
-                //Redo
-                Edit.Redo();
-            }
-            else if (e.keycode == Key.key_a) {
-                //Go up a layer
+    public function startSceneDrag(screenPos) {
+        dragMouseStartPos = screenPos;
+    }
+
+    public function sceneDrag(screenPos) {
+        var drag = Vector.Subtract(screenPos, dragMouseStartPos);
+
+        Luxe.camera.viewport.x += drag.x;
+        Luxe.camera.viewport.y += drag.y;
+
+        dragMouseStartPos = screenPos;
+    }
+
+    public function undoRedoInput(e:KeyEvent) {
+       if (e.keycode == Key.key_z) {
+            //Undo
+            Edit.Undo();
+        }
+        else if (e.keycode == Key.key_x) {
+            //Redo
+            Edit.Redo();
+        } 
+    }
+
+    public function selectLayerInput(e:KeyEvent) {
+        if (e.keycode == Key.key_a) {
+            //Go up a layer
+            switchLayerSelection(-1);
+        }
+        else if (e.keycode == Key.key_s) {
+            //Go down a layer
+            switchLayerSelection(1);
+        }
+    }
+
+    public function deleteLayerInput(e:KeyEvent) {
+        if (e.keycode == Key.key_p) {  
+            //Delete selected layer
+            if (layers.getNumLayers() > 0) {    
+                Edit.RemoveLayer(layers, curLayer);
                 switchLayerSelection(-1);
             }
-            else if (e.keycode == Key.key_s) {
-                //Go down a layer
-                switchLayerSelection(1);
-            }
-            else if (e.keycode == Key.key_p) {
-                //Delete selected layer
-                if (layers.getNumLayers() > 0) {    
-                    Edit.RemoveLayer(layers, curLayer);
-                    switchLayerSelection(-1);
-                }
-            }
-            else if (e.keycode == Key.key_q) {
-                //Move selected layer down the stack
-                if (curLayer > 0) {
-                    Edit.MoveLayer(layers, curLayer, -1);
-                    switchLayerSelection(-1);
-                }
-            }
-            else if (e.keycode == Key.key_w) {
-                //Move selected layer up the stack
-                if (curLayer < layers.getNumLayers() - 1) {
-                    Edit.MoveLayer(layers, curLayer, 1);    
-                    switchLayerSelection(1);
-                }
-            }
-            else if (e.keycode == Key.key_l) {
-                //Switch color picker mode
-                if (isPickingColor) {
-                    addColorToList(picker.pickedColor);
-                }
-                colorPickerMode(!isPickingColor);
-            }
-            else if (e.keycode == Key.key_j) {
-                //prev color
-                navigateColorList(-1);
-            }
-            else if (e.keycode == Key.key_k) {
-                //next color
-                navigateColorList(1);
-            }
-            else if (e.keycode == Key.key_m) {
-                //pick up color
-                var tmp = layers.getLayer(curLayer).color.clone().toColorHSV();
-                picker.pickedColor = tmp;
-                slider.value = tmp.v;
+        }
+    }
 
-                addColorToList(picker.pickedColor);
-            }
-            else if (e.keycode == Key.key_n) {
-                //drop color
-                //layers.getLayer(curLayer).color = picker.pickedColor.clone();
-                Edit.ChangeColor(layers.getLayer(curLayer), picker.pickedColor.clone());
-            }
-            else if (e.keycode == Key.key_1) {
-                //save
-                var output = File.write(Luxe.core.app.io.platform.dialog_save() + ".json", false);
-
-                var outObj = layers.getJsonRepresentation();
-                var outStr = haxe.Json.stringify(outObj);
-                output.writeString(outStr);
-
-                output.close();
-            }
-            else if (e.keycode == Key.key_2) {
-                //load
-                var input = File.read(Luxe.core.app.io.platform.dialog_open(), false);
-
-                var inStr = input.readLine();
-                var inObj = haxe.Json.parse(inStr);
-
-                for (l in cast(inObj.layers, Array<Dynamic>)) {
-                    Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
-                    switchLayerSelection(1);
-                }
-
-                input.close();
-            }
-            else if (e.keycode == Key.minus) {
-                //zoom out
-                Luxe.renderer.camera.zoom *= 0.5;
-            }
-            else if (e.keycode == Key.equals) {
-                //zoom in
-                Luxe.renderer.camera.zoom *= 2;
+    public function moveLayerInput(e:KeyEvent) {
+        if (e.keycode == Key.key_q) {
+            //Move selected layer down the stack
+            if (curLayer > 0) {
+                Edit.MoveLayer(layers, curLayer, -1);
+                switchLayerSelection(-1);
             }
         }
-
-        override function onmousedown(e:MouseEvent) {
-            var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
-
-            if (!isDrawing) {
-                curLine = new Polyline({color: picker.pickedColor.clone(), depth: aboveLayersDepth+1}, [mousepos]);
-                isDrawing = true;
+        else if (e.keycode == Key.key_w) {
+            //Move selected layer up the stack
+            if (curLayer < layers.getNumLayers() - 1) {
+                Edit.MoveLayer(layers, curLayer, 1);    
+                switchLayerSelection(1);
             }
-            else {
+        }
+    }
+
+    public function recentColorsInput(e:KeyEvent) {
+        if (e.keycode == Key.key_j) {
+            //prev color
+            navigateColorList(-1);
+        }
+        else if (e.keycode == Key.key_k) {
+            //next color
+            navigateColorList(1);
+        }    
+    }
+
+    public function colorDropperInput(e:KeyEvent) {
+        if (e.keycode == Key.key_m) {
+            //pick up color
+            var tmp = layers.getLayer(curLayer).color.clone().toColorHSV();
+            picker.pickedColor = tmp;
+            slider.value = tmp.v;
+
+            addColorToList(picker.pickedColor);
+        }
+        else if (e.keycode == Key.key_n) {
+            //drop color
+            //layers.getLayer(curLayer).color = picker.pickedColor.clone();
+            Edit.ChangeColor(layers.getLayer(curLayer), picker.pickedColor.clone());
+        }
+    }
+
+    public function saveLoadInput(e:KeyEvent) {
+        if (e.keycode == Key.key_1) {
+            //save
+            var output = File.write(Luxe.core.app.io.platform.dialog_save() + ".json", false);
+
+            var outObj = layers.getJsonRepresentation();
+            var outStr = haxe.Json.stringify(outObj);
+            output.writeString(outStr);
+
+            output.close();
+        }
+        else if (e.keycode == Key.key_2) {
+            //load
+            var input = File.read(Luxe.core.app.io.platform.dialog_open(), false);
+
+            var inStr = input.readLine();
+            var inObj = haxe.Json.parse(inStr);
+
+            for (l in cast(inObj.layers, Array<Dynamic>)) {
+                Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
+                switchLayerSelection(1);
+            }
+
+            input.close();
+        }
+    }
+
+    public function zoomInput(e:KeyEvent) {
+        if (e.keycode == Key.minus) {
+            //zoom out
+            Luxe.renderer.camera.zoom *= 0.5;
+        }
+        else if (e.keycode == Key.equals) {
+            //zoom in
+            Luxe.renderer.camera.zoom *= 2;
+        }
+    }
+
+    public function startDrawing(e:MouseEvent) {
+        var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
+        curLine = new Polyline({color: picker.pickedColor.clone(), depth: aboveLayersDepth+1}, [mousepos]);
+        isDrawing = true;
+    }
+
+    public function smoothDrawing(e:MouseEvent) {
+        var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
+        if (isDrawing && Luxe.input.mousedown(1)) {
+            if (curLine.getEndPoint().distance(mousepos) >= minLineLength) {
                 addPointToCurrentLine(mousepos);
             }
         }
-
-        override function onmousemove(e:MouseEvent) {
-            var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
-
-            if (isDrawing && Luxe.input.mousedown(1)) {
-
-                if (curLine.getEndPoint().distance(mousepos) >= minLineLength) {
-                    addPointToCurrentLine(mousepos);
-                }
-            }
-        }
     }
 
-    class EditState extends State {
+    public function pointDrawing(e:MouseEvent) {
+        var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
+        addPointToCurrentLine(mousepos);
+    }
+
+    public function exitColorPickerMode() {
+        if (picker.pickedColor != colorList[colorList.length-1]) {
+            addColorToList(picker.pickedColor);
+        }
+        colorPickerMode(false);
+    }
+
+    public function enterColorPickerMode() {
+        colorPickerMode(true);
+    }
+
+} //Main
+
+class DrawState extends State {
+
+    var main : Main;
+
+    override function init() {
+    } //init
+
+    override function onleave<T>( _main:T ) {
+    } //onleave
+
+    override function onenter<T>( _main:T ) {
+        main = cast(_main, Main);
+    } //onenter
+
+    override function onkeydown(e:KeyEvent) {
+        //input
+        main.undoRedoInput(e);
+
+        main.selectLayerInput(e);
+
+        main.deleteLayerInput(e);
+
+        main.moveLayerInput(e);
+
+        main.recentColorsInput(e);
+
+        main.colorDropperInput(e);
+
+        main.saveLoadInput(e);
+
+        main.zoomInput(e);
         
-    }
-
-    class PickColorState extends State {
-        override function onkeydown(e:KeyEvent) {
-            else if (e.keycode == Key.key_l) {
-                //Switch color picker mode
-                if (isPickingColor) {
-                    addColorToList(picker.pickedColor);
-                }
-                colorPickerMode(!isPickingColor);
-            }
-            else if (e.keycode == Key.key_j) {
-                //prev color
-                navigateColorList(-1);
-            }
-            else if (e.keycode == Key.key_k) {
-                //next color
-                navigateColorList(1);
-            }
-            else if (e.keycode == Key.key_1) {
-                //save
-                var output = File.write(Luxe.core.app.io.platform.dialog_save() + ".json", false);
-
-                var outObj = layers.getJsonRepresentation();
-                var outStr = haxe.Json.stringify(outObj);
-                output.writeString(outStr);
-
-                output.close();
-            }
-            else if (e.keycode == Key.key_2) {
-                //load
-                var input = File.read(Luxe.core.app.io.platform.dialog_open(), false);
-
-                var inStr = input.readLine();
-                var inObj = haxe.Json.parse(inStr);
-
-                for (l in cast(inObj.layers, Array<Dynamic>)) {
-                    Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
-                    switchLayerSelection(1);
-                }
-
-                input.close();
-            }
+        //switch modes
+        if (e.keycode == Key.key_l) {
+            //enter color picker mode
+            machine.set("pickcolor", main);
+        }
+        
+        if (e.keycode == Key.key_e) {
+            machine.set("edit", main);
         }
     }
 
-} //Main	
+    override function onmousedown(e:MouseEvent) {
+        if (!main.isDrawing) {
+            main.startDrawing(e);
+        }
+        else {
+            main.pointDrawing(e);
+        }
+    }
+
+    override function onmousemove(e:MouseEvent) {
+        main.smoothDrawing(e);
+    }
+}
+
+class EditState extends State {
+
+    var main : Main;
+
+    override function init() {
+    } //init
+
+    override function onleave<T>( _main:T ) {
+    } //onleave
+
+    override function onenter<T>( _main:T ) {
+        main = cast(_main, Main);
+    } //onenter
+
+    override function onmousedown(e:MouseEvent) {
+        main.startSceneDrag(e.pos);
+    }
+
+    override function onmousemove(e:MouseEvent) {
+        if (Luxe.input.mousedown(1)) {
+            main.sceneDrag(e.pos);
+        }
+    }
+
+    override function onkeydown(e:KeyEvent) {
+        //return to draw mode
+        if (e.keycode == Key.key_e) {
+            machine.set("draw", main);
+        }
+    }
+}
+
+class PickColorState extends State {
+
+    var main : Main;
+
+    override function init() {
+    } //init
+
+    override function onleave<T>( _main:T ) {
+        main.exitColorPickerMode();
+    } //onleave
+
+    override function onenter<T>( _main:T ) {
+        main = cast(_main, Main);
+        main.enterColorPickerMode();
+    } //onenter
+
+    override function onkeydown(e:KeyEvent) {
+        main.recentColorsInput(e);
+
+        main.saveLoadInput(e);
+
+        if (e.keycode == Key.key_l) {
+            //leave color picker mode
+            machine.set("draw", main);
+        }
+    }
+}   

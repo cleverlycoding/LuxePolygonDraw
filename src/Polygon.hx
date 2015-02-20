@@ -9,7 +9,7 @@ import phoenix.Batcher; //necessary to access PrimitiveType
 class Polygon extends Visual {
 	var points:Array<Vector>;
 
-	override function new(_options:luxe.options.VisualOptions, points:Array<Vector>, ?jsonObj) {
+	public override function new(_options:luxe.options.VisualOptions, points:Array<Vector>, ?jsonObj) {
 		super(_options);
 
 		this.points = points;
