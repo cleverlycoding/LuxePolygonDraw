@@ -8,6 +8,9 @@ import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher;
 import luxe.States;
+import luxe.collision.Collision;
+import luxe.collision.shapes.Circle in CollisionCircle;
+import luxe.collision.shapes.Polygon in CollisionPoly;
 
 //HAXE
 import sys.io.File;
@@ -23,6 +26,7 @@ import Edit;
 import LayerManager;
 
 using ledoux.UtilityBelt.VectorExtender;
+using ledoux.UtilityBelt.PolylineExtender;
 
 class Main extends luxe.Game {
 
@@ -47,11 +51,14 @@ class Main extends luxe.Game {
     //editting
     var dragMouseStartPos : Vector;
 
-    //UI
+    //ui
     var uiBatcher : Batcher;
 
-    //STATES
+    //states
     var machine : States;
+
+    //collisions
+    var polyCollision : CollisionPoly;
 
     override function ready() {
 
@@ -158,14 +165,16 @@ class Main extends luxe.Game {
     	if (curLayer >= layers.getNumLayers()) curLayer = layers.getNumLayers()-1;
 
     	if (layers.getNumLayers() > 0) {	
-	    	var loop = (cast layers.getLayer(curLayer)).getPoints();
-	    	//horrible hacks to avoid aliasing :/
+            var poly : Polygon = cast(layers.getLayer(curLayer), Polygon);
+
+            //close loop
+	    	var loop = poly.getPoints();
 	    	var start = loop[0];
-	    	selectedLayerOutline.setPoints([]);
-	    	for (point in loop) {
-	    		selectedLayerOutline.addPoint(point);
-	    	}
-	    	selectedLayerOutline.addPoint(start);
+            loop.push(start);
+
+            selectedLayerOutline.setPoints(loop);
+
+            polyCollision = poly.collisionBounds();
     	}
     	else {
 	    	selectedLayerOutline.setPoints([]);
@@ -175,12 +184,16 @@ class Main extends luxe.Game {
     function addPointToCurrentLine(p:Vector) {
     	curLine.addPoint(p);
 
-    	var test = curLine.getPoints().findPolylineIntersections();
-    	if (test.intersects) {
-    		var newPolylines = curLine.getPoints().splitPolyline(test.intersectionList[0]);
+    	var test = curLine.getPoints().polylineIntersections();
 
-    		Edit.AddLayer(layers, new Polygon({color: curLine.color}, newPolylines.closedLine), curLayer+1);
-    		switchLayerSelection(1);
+        if (test.intersects) {
+
+    		var newPolylines = curLine.getPoints().polylineSplit(test.intersectionList[0]);
+            var newPolygon = new Polygon({color: curLine.color}, newPolylines.closedLine);
+    		
+            Edit.AddLayer(layers, newPolygon, curLayer+1);
+    		
+            switchLayerSelection(1);
 
     		//remove drawing line
     		endDrawing();
@@ -193,15 +206,38 @@ class Main extends luxe.Game {
 		isDrawing = false;
     }
 
+    public function startLayerDrag(mousePos) : Bool {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+        if (Collision.pointInPoly(mousePos, polyCollision)) {
+            dragMouseStartPos = mousePos;
+            return true;
+        }
+        return false;
+    }
+
+    public function layerDrag(mousePos) {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+
+        var poly = cast(layers.getLayer(curLayer), Polygon);
+
+        var drag = Vector.Subtract(mousePos, dragMouseStartPos);
+        
+        poly.transform.pos.add(drag);
+
+        dragMouseStartPos = mousePos;
+
+        switchLayerSelection(0);
+    }
+
     public function startSceneDrag(screenPos) {
         dragMouseStartPos = screenPos;
     }
 
     public function sceneDrag(screenPos) {
-        var drag = Vector.Subtract(screenPos, dragMouseStartPos);
+        var drag = Vector.Subtract(dragMouseStartPos, screenPos);
+        drag.divideScalar(Luxe.camera.zoom); //necessary b/c I didn't put the vectors into screen space (WHOOPS)
 
-        Luxe.camera.viewport.x += drag.x;
-        Luxe.camera.viewport.y += drag.y;
+        Luxe.camera.transform.pos.add(drag);
 
         dragMouseStartPos = screenPos;
     }
@@ -234,6 +270,17 @@ class Main extends luxe.Game {
             if (layers.getNumLayers() > 0) {    
                 Edit.RemoveLayer(layers, curLayer);
                 switchLayerSelection(-1);
+            }
+        }
+    }
+
+    public function duplicateLayerInput(e:KeyEvent) {
+        if (e.keycode == Key.key_d) {
+            if (layers.getNumLayers() > 0) {    
+                var layerDupe = new Polygon({}, [], cast(layers.getLayer(curLayer), Polygon).getJsonRepresentation());
+                layerDupe.transform.pos.add(new Vector(10,10));
+                Edit.AddLayer(layers, layerDupe, curLayer);
+                switchLayerSelection(1);
             }
         }
     }
@@ -329,7 +376,7 @@ class Main extends luxe.Game {
     public function smoothDrawing(e:MouseEvent) {
         var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
         if (isDrawing && Luxe.input.mousedown(1)) {
-            if (curLine.getEndPoint().distance(mousepos) >= minLineLength) {
+            if (curLine.getEndPoint().distance(mousepos) >= (minLineLength / Luxe.camera.zoom)) {
                 addPointToCurrentLine(mousepos);
             }
         }
@@ -377,6 +424,8 @@ class DrawState extends State {
 
         main.moveLayerInput(e);
 
+        main.duplicateLayerInput(e);
+
         main.recentColorsInput(e);
 
         main.colorDropperInput(e);
@@ -413,6 +462,7 @@ class DrawState extends State {
 class EditState extends State {
 
     var main : Main;
+    var draggingLayer : Bool;
 
     override function init() {
     } //init
@@ -425,16 +475,50 @@ class EditState extends State {
     } //onenter
 
     override function onmousedown(e:MouseEvent) {
-        main.startSceneDrag(e.pos);
+        draggingLayer = main.startLayerDrag(e.pos);
+
+        if (!draggingLayer) {
+          main.startSceneDrag(e.pos);
+        }
     }
 
     override function onmousemove(e:MouseEvent) {
         if (Luxe.input.mousedown(1)) {
-            main.sceneDrag(e.pos);
+            if (draggingLayer) {
+                main.layerDrag(e.pos);
+            }
+            else {
+                main.sceneDrag(e.pos);
+            }
         }
     }
 
+    override function onmouseup(e:MouseEvent) {
+        draggingLayer = false;
+    }
+
     override function onkeydown(e:KeyEvent) {
+        //input
+        main.undoRedoInput(e);
+
+        main.selectLayerInput(e);
+
+        main.deleteLayerInput(e);
+
+        main.moveLayerInput(e);
+
+        main.duplicateLayerInput(e);
+
+        /*
+        main.recentColorsInput(e);
+
+        main.colorDropperInput(e);
+        */
+
+        main.saveLoadInput(e);
+
+        main.zoomInput(e);
+
         //return to draw mode
         if (e.keycode == Key.key_e) {
             machine.set("draw", main);

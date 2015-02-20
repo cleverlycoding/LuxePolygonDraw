@@ -5,6 +5,10 @@ import luxe.Vector;
 import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher; //necessary to access PrimitiveType
+import luxe.collision.shapes.Polygon in CollisionPoly;
+
+using ledoux.UtilityBelt.PolylineExtender;
+using ledoux.UtilityBelt.ArrayExtender;
 
 class Polygon extends Visual {
 	var points:Array<Vector>;
@@ -13,6 +17,8 @@ class Polygon extends Visual {
 		super(_options);
 
 		this.points = points;
+
+		recenter();
 
 		if (jsonObj != null) {
 			this.color = new Color(jsonObj.color.r, jsonObj.color.g, jsonObj.color.b, jsonObj.color.a);
@@ -71,11 +77,16 @@ class Polygon extends Visual {
 	}
 
 	public function getPoints(): Array<Vector> {
-		return points;
+		return points.toWorldSpace(transform);
 	}
 
 	public function addPoint(p:Vector) {
+		//put points back in world space to add world-space point
+		points = points.toWorldSpace(transform);
 		points.push(p);
+		//re-center polygon
+		recenter();
+
 		generateMesh(); //regenerate mesh whenever you add a point (probably inefficient)
 	}
 
@@ -88,5 +99,15 @@ class Polygon extends Visual {
 		var jsonColor = {r: color.r, g: color.g, b: color.b, a: color.a};
 
 		return {color: jsonColor, points: jsonPoints};
+	}
+
+	function recenter() {
+		var c = points.polylineCenter();
+		transform.pos.add(c);
+		points = points.toLocalSpace(transform);
+	}
+
+	public function collisionBounds() : CollisionPoly {
+		return new CollisionPoly(transform.pos.x, transform.pos.y, cast(points.clone()));
 	}
 }

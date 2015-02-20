@@ -6,6 +6,9 @@ import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher; //necessary to access PrimitiveType
 
+using ledoux.UtilityBelt.VectorExtender;
+using ledoux.UtilityBelt.PolylineExtender;
+
 class Polyline extends Visual {
 	var points:Array<Vector>;
 
@@ -13,6 +16,8 @@ class Polyline extends Visual {
 		super(_options);
 
 		this.points = points;
+
+		recenter();
 
 		geometry = new Geometry({
 			primitive_type: PrimitiveType.line_strip,
@@ -35,19 +40,31 @@ class Polyline extends Visual {
 	}
 
 	public function getPoints(): Array<Vector> {
-		return points;
+		return points.toWorldSpace(transform);
 	}
 
 	public function addPoint(p:Vector) {
+		//put points back in world space to add world-space point
+		points = points.toWorldSpace(transform);
 		points.push(p);
+		//re-center polyline
+		recenter();
+
+		//re-generate mesh
 		generateMesh(); //regenerate mesh whenever you add a point (probably inefficient)
 	}
 
 	public function getStartPoint(): Vector {
-		return points[0];
+		return getPoints()[0];
 	}
 
 	public function getEndPoint(): Vector {
-		return points[points.length-1];
+		return getPoints()[points.length-1];
+	}
+
+	function recenter() {
+		var c = points.polylineCenter();
+		transform.pos.add(c);
+		points = points.toLocalSpace(transform);
 	}
 }
