@@ -2,16 +2,19 @@ import luxe.Log;
 import luxe.Visual;
 import luxe.Color;
 import luxe.Vector;
+import luxe.Rectangle;
 import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher; //necessary to access PrimitiveType
 import luxe.collision.shapes.Polygon in CollisionPoly;
 
+using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
 using ledoux.UtilityBelt.ArrayExtender;
 
 class Polygon extends Visual {
 	var points:Array<Vector>;
+	var bounds:Rectangle;
 
 	public override function new(_options:luxe.options.VisualOptions, points:Array<Vector>, ?jsonObj) {
 		super(_options);
@@ -21,6 +24,8 @@ class Polygon extends Visual {
 		recenter();
 
 		if (jsonObj != null) {
+			transform.pos = new Vector(jsonObj.pos.x, jsonObj.pos.y);
+
 			this.color = new Color(jsonObj.color.r, jsonObj.color.g, jsonObj.color.b, jsonObj.color.a);
 
 			this.points = [];
@@ -39,6 +44,13 @@ class Polygon extends Visual {
 	}
 
 	function generateMesh() {
+		//clear geometry (super INEFFICIENT (probably))
+		Luxe.renderer.batcher.remove(geometry); //switch to _options.batcher for better flexibility
+		geometry = new Geometry({
+			primitive_type: PrimitiveType.triangles,
+			batcher: Luxe.renderer.batcher
+		});
+
 		var p2t = new org.poly2tri.VisiblePolygon();
 		p2t.addPolyline(convertVectorsToPoly2TriPoints(points));
 		p2t.performTriangulationOnce();
@@ -71,8 +83,42 @@ class Polygon extends Visual {
 		return pointArray;
 	}
 
+	function calculateBounds() : Rectangle {
+		var xMin = 0.0;
+		var xMax = 0.0;
+		var yMin = 0.0;
+		var yMax = 0.0;
+
+		for (p in points) {
+			xMin = Math.min(xMin, p.x);
+			xMax = Math.max(xMax, p.x);
+			yMin = Math.min(yMin, p.y);
+			yMax = Math.max(yMax, p.y);
+		}
+
+		var x = xMin;
+		var y = yMin;
+		var w = xMax - xMin;
+		var h = yMax - yMin;
+
+		return new Rectangle(x, y, w, h);
+	}
+
+	public function getBounds() : Rectangle {
+		//probably not the best place to put this
+		bounds = calculateBounds(); //local bounds
+
+		var pos = new Vector(bounds.x, bounds.y);
+		var size = new Vector(bounds.w, bounds.h);
+		pos = pos.toWorldSpace(transform);
+		size = size.multiply(transform.scale); //is there a better way of doing this?
+		return new Rectangle(pos.x, pos.y, size.x, size.y);
+	}
+
 	public function setPoints(points:Array<Vector>) {
 		this.points = points;
+		transform.pos = new Vector(0,0);
+		recenter();
 		generateMesh(); //regenerate mesh whenever you change the number of points
 	}
 
@@ -91,6 +137,8 @@ class Polygon extends Visual {
 	}
 
 	public function getJsonRepresentation() {
+		var jsonPos = {x: transform.pos.x, y: transform.pos.y};
+
 		var jsonPoints = [];
 		for (p in points) {
 			jsonPoints.push({x: p.x, y: p.y});
@@ -98,7 +146,7 @@ class Polygon extends Visual {
 
 		var jsonColor = {r: color.r, g: color.g, b: color.b, a: color.a};
 
-		return {color: jsonColor, points: jsonPoints};
+		return {pos: jsonPos, color: jsonColor, points: jsonPoints};
 	}
 
 	function recenter() {

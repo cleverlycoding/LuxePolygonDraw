@@ -33,6 +33,10 @@ class VectorExtender {
 		}
 		return worldV;
 	}
+
+	static public function absolute(v:Vector) : Vector {
+		return new Vector(Math.abs(v.x), Math.abs(v.y));
+	}
 }
 
 class ArrayExtender {

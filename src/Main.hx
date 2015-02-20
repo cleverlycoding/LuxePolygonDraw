@@ -11,6 +11,7 @@ import luxe.States;
 import luxe.collision.Collision;
 import luxe.collision.shapes.Circle in CollisionCircle;
 import luxe.collision.shapes.Polygon in CollisionPoly;
+import luxe.utils.Maths;
 
 //HAXE
 import sys.io.File;
@@ -50,6 +51,8 @@ class Main extends luxe.Game {
 
     //editting
     var dragMouseStartPos : Vector;
+    var selectedVertex : Int;
+    var scaleDragAnchor : Vector;
 
     //ui
     var uiBatcher : Batcher;
@@ -398,6 +401,170 @@ class Main extends luxe.Game {
         colorPickerMode(true);
     }
 
+    public function drawScaleHandles() {
+        var b = curPoly().getBounds();
+        var corners = [new Vector(b.x, b.y), new Vector(b.x + b.w, b.y), new Vector(b.x, b.y + b.h), new Vector(b.x + b.w, b.y + b.h)];
+        var cornerSize = 10 / Luxe.camera.zoom;
+
+        Luxe.draw.rectangle({
+            x : b.x,
+            y : b.y,
+            h : b.h,
+            w : b.w,
+            color : new Color(255,255,255),
+            immediate : true
+        });
+
+        for (c in corners) {
+            Luxe.draw.box({
+                x : c.x - (cornerSize/2),
+                y : c.y - (cornerSize/2),
+                h : cornerSize,
+                w : cornerSize,
+                color : new Color(255,255,255),
+                immediate : true
+            });
+        }
+    }
+
+    function collisionWithScaleHandle(mousePos) : Int {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+
+        var b = curPoly().getBounds();
+        var corners = [new Vector(b.x, b.y), new Vector(b.x + b.w, b.y), new Vector(b.x, b.y + b.h), new Vector(b.x + b.w, b.y + b.h)];
+        var cornerSize = 10 / Luxe.camera.zoom;
+
+        var mouseCollider = new CollisionCircle(mousePos.x, mousePos.y, 5);
+        var handleCollider = new CollisionCircle(0, 0, cornerSize * 0.7); //this collision circle is kind of a hack, but it should be "close enough"
+
+        var i = 0;
+        for (c in corners) {
+            handleCollider.x = c.x;
+            handleCollider.y = c.y;
+
+            if (Collision.test(mouseCollider, handleCollider) != null) {
+                return i;
+            }
+            i++;
+        }
+
+        return -1;
+    }
+
+    //THIS SUCKS -- RETHINK IT LATER
+    public function startScaleDrag(mousePos) : Bool {
+        var i = collisionWithScaleHandle(mousePos);
+        if (i > -1) {
+            var anchors = [new Vector(-1,-1), new Vector(1,-1), new Vector(-1,1), new Vector(1,1)]; //hack attack
+            scaleDragAnchor = anchors[i];
+            dragMouseStartPos = Luxe.camera.screen_point_to_world(mousePos);
+            return true;
+        }
+        return false;
+    }
+
+    //THIS SUCKS -- RETHINK IT LATER
+    public function scaleDrag(mousePos) {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+        var drag = Vector.Subtract(mousePos, dragMouseStartPos);
+
+        var b = curPoly().getBounds();
+
+        drag.multiply(scaleDragAnchor);
+
+        var scalePercent = new Vector(drag.x / b.w, drag.y / b.h);
+
+        curPoly().transform.scale.add(scalePercent);
+
+        dragMouseStartPos = mousePos;
+
+        switchLayerSelection(0);
+    }
+
+    public function drawVertexHandles() {
+        if (!areVerticesTooCloseToHandle()) {  
+            for (p in curPoly().getPoints()) {
+                Luxe.draw.circle({
+                    r : 10 / Luxe.camera.zoom,
+                    steps: 360,
+                    color : new Color(255,255,255),
+                    depth : aboveLayersDepth,
+                    x : p.x,
+                    y : p.y,
+                    immediate : true
+                });
+            }
+        }
+    }
+
+    function collisionWithVertexHandle(mousePos) : Int {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+        
+        var vertexCollider = new CollisionCircle(0, 0, 10 / Luxe.camera.zoom);
+        var mouseCollider = new CollisionCircle(mousePos.x, mousePos.y, 5);
+
+        var i = 0;
+        for (p in curPoly().getPoints()) {
+            vertexCollider.x = p.x;
+            vertexCollider.y = p.y;
+
+            if (Collision.test(mouseCollider, vertexCollider) != null) {
+                return i;
+            }
+
+            i++;
+        }
+
+        return -1;
+    }
+
+    public function startVertexDrag(mousePos) : Bool {
+        if (!areVerticesTooCloseToHandle()) {  
+            selectedVertex = collisionWithVertexHandle(mousePos);
+
+            if (selectedVertex > -1) {
+                dragMouseStartPos = Luxe.camera.screen_point_to_world(mousePos);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function vertexDrag(mousePos) {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+
+        var drag = Vector.Subtract(mousePos, dragMouseStartPos);
+
+        var points = curPoly().getPoints();
+        points[selectedVertex].add(drag);
+        switchLayerSelection(0);
+
+        curPoly().setPoints(points);
+
+        dragMouseStartPos = mousePos;
+    }
+
+    function areVerticesTooCloseToHandle() {
+        var points = curPoly().getPoints();
+        for (i in 0 ... points.length-1) {
+            var p1 = points[i];
+
+            for (j in i+1 ... points.length) {
+                var p2 = points[j];
+
+                if (p1.distance(p2) < 10 / Luxe.camera.zoom) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    function curPoly() : Polygon {
+        return cast(layers.getLayer(curLayer), Polygon);
+    }
+
 } //Main
 
 class DrawState extends State {
@@ -463,6 +630,8 @@ class EditState extends State {
 
     var main : Main;
     var draggingLayer : Bool;
+    var draggingVertex : Bool;
+    var draggingScale : Bool;
 
     override function init() {
     } //init
@@ -474,17 +643,37 @@ class EditState extends State {
         main = cast(_main, Main);
     } //onenter
 
-    override function onmousedown(e:MouseEvent) {
-        draggingLayer = main.startLayerDrag(e.pos);
+    override function update(dt:Float) {
+        main.drawScaleHandles();
+        main.drawVertexHandles();
+    }
 
-        if (!draggingLayer) {
+    override function onmousedown(e:MouseEvent) {
+
+        draggingScale = main.startScaleDrag(e.pos);
+
+        if (!draggingScale) {
+            draggingVertex = main.startVertexDrag(e.pos);
+        }
+
+        if (!draggingVertex) {
+            draggingLayer = main.startLayerDrag(e.pos);
+        }
+        
+        if (!draggingLayer && !draggingVertex) {
           main.startSceneDrag(e.pos);
         }
     }
 
     override function onmousemove(e:MouseEvent) {
         if (Luxe.input.mousedown(1)) {
-            if (draggingLayer) {
+            if (draggingScale) {
+                main.scaleDrag(e.pos);
+            }
+            else if (draggingVertex) {
+                main.vertexDrag(e.pos);
+            }
+            else if (draggingLayer) {
                 main.layerDrag(e.pos);
             }
             else {
@@ -494,6 +683,7 @@ class EditState extends State {
     }
 
     override function onmouseup(e:MouseEvent) {
+        draggingVertex = false;
         draggingLayer = false;
     }
 
