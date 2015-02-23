@@ -3,6 +3,7 @@ package ledoux;
 import luxe.Vector;
 import luxe.Transform;
 import luxe.Matrix;
+import luxe.Quaternion;
 
 using Lambda;
 
@@ -21,13 +22,13 @@ class VectorExtender {
 		if (t.parent != null) {
 			localV = toLocalSpace(v, t.parent);
 		}
-		localV = v.transform(t.world.matrix.inverse());
+		localV = v.clone().transform(t.world.matrix.inverse());
 		return localV;
 	}
 
 	static public function toWorldSpace(v:Vector, t:Transform) : Vector {
-		var worldV : Vector;
-		worldV = v.transform(t.world.matrix);
+		var worldV : Vector;	
+		worldV = v.clone().transform(t.world.matrix);
 		if (t.parent != null) {
 			worldV = toWorldSpace(v, t.parent);
 		}
@@ -36,6 +37,25 @@ class VectorExtender {
 
 	static public function absolute(v:Vector) : Vector {
 		return new Vector(Math.abs(v.x), Math.abs(v.y));
+	}
+}
+
+class TransformExtender {
+	static public function up(t:Transform) {
+		var upV = new Vector(0.0, 1.0);
+		upV.applyQuaternion(t.rotation);
+		return upV;
+	}
+
+	static public function right(t:Transform) {
+		var rightV = new Vector(1.0, 0.0);
+		rightV.applyQuaternion(t.rotation);
+		return rightV;
+	}
+
+	static public function rotate(t:Transform, a:Float) { //rotates right
+		var rot = ( new Quaternion() ).setFromAxisAngle( new Vector(0,0,1), a );
+		t.rotation.multiply(rot);
 	}
 }
 

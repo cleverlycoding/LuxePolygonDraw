@@ -28,6 +28,7 @@ import LayerManager;
 
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
+using ledoux.UtilityBelt.TransformExtender;
 
 class Main extends luxe.Game {
 
@@ -52,7 +53,7 @@ class Main extends luxe.Game {
     //editting
     var dragMouseStartPos : Vector;
     var selectedVertex : Int;
-    var scaleDragAnchor : Vector;
+    var scaleDir : Vector;
 
     //ui
     var uiBatcher : Batcher;
@@ -401,62 +402,88 @@ class Main extends luxe.Game {
         colorPickerMode(true);
     }
 
-    public function drawScaleHandles() {
-        var b = curPoly().getBounds();
-        var corners = [new Vector(b.x, b.y), new Vector(b.x + b.w, b.y), new Vector(b.x, b.y + b.h), new Vector(b.x + b.w, b.y + b.h)];
-        var cornerSize = 10 / Luxe.camera.zoom;
+    function scaleHandles() {
+        var p = curPoly();
+        var b = p.getBounds();
 
-        Luxe.draw.rectangle({
-            x : b.x,
-            y : b.y,
-            h : b.h,
-            w : b.w,
+        var upPos = Vector.Add( p.transform.pos, p.transform.up().multiplyScalar(b.h * 0.7) );
+        var rightPos = Vector.Add( p.transform.pos, p.transform.right().multiplyScalar(b.w * 0.7) );
+
+        var handleSize = 10 / Luxe.camera.zoom;
+
+        return {size: handleSize, up: upPos, right: rightPos};
+    }
+
+    public function drawScaleHandles() {
+        
+        //curPoly().rotation_z += 0.1;
+        //curPoly().transform.rotate(0.01);
+
+        var handles = scaleHandles();
+
+        Luxe.draw.line({
+            p0 : curPoly().transform.pos,
+            p1 : handles.up,
             color : new Color(255,255,255),
+            depth : aboveLayersDepth,
             immediate : true
         });
 
-        for (c in corners) {
-            Luxe.draw.box({
-                x : c.x - (cornerSize/2),
-                y : c.y - (cornerSize/2),
-                h : cornerSize,
-                w : cornerSize,
-                color : new Color(255,255,255),
-                immediate : true
-            });
-        }
+        Luxe.draw.box({
+            x : handles.up.x - (handles.size / 2),
+            y : handles.up.y - (handles.size / 2),
+            h : handles.size,
+            w : handles.size,
+            color : new Color(255,255,255),
+            depth : aboveLayersDepth,
+            immediate : true
+        });
+
+        Luxe.draw.line({
+            p0 : curPoly().transform.pos,
+            p1 : handles.right,
+            color : new Color(255,255,255),
+            depth : aboveLayersDepth,
+            immediate : true
+        });
+
+        Luxe.draw.box({
+            x : handles.right.x - (handles.size / 2),
+            y : handles.right.y - (handles.size / 2),
+            h : handles.size,
+            w : handles.size,
+            color : new Color(255,255,255),
+            depth : aboveLayersDepth,
+            immediate : true
+        });
     }
 
-    function collisionWithScaleHandle(mousePos) : Int {
+    function collisionWithScaleHandle(mousePos) : Bool {
+
+        var handles = scaleHandles();
+
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
 
-        var b = curPoly().getBounds();
-        var corners = [new Vector(b.x, b.y), new Vector(b.x + b.w, b.y), new Vector(b.x, b.y + b.h), new Vector(b.x + b.w, b.y + b.h)];
-        var cornerSize = 10 / Luxe.camera.zoom;
-
         var mouseCollider = new CollisionCircle(mousePos.x, mousePos.y, 5);
-        var handleCollider = new CollisionCircle(0, 0, cornerSize * 0.7); //this collision circle is kind of a hack, but it should be "close enough"
+        var handleColliderUp = new CollisionCircle(handles.up.x, handles.up.y, handles.size * 0.7); //this collision circle is kind of a hack, but it should be "close enough"
+        var handleColliderRight = new CollisionCircle(handles.right.x, handles.right.y, handles.size * 0.7);
 
-        var i = 0;
-        for (c in corners) {
-            handleCollider.x = c.x;
-            handleCollider.y = c.y;
 
-            if (Collision.test(mouseCollider, handleCollider) != null) {
-                return i;
-            }
-            i++;
+        if (Collision.test(mouseCollider, handleColliderUp) != null) {
+            scaleDir = curPoly().transform.up();
+            return true;
         }
-
-        return -1;
+        else if (Collision.test(mouseCollider, handleColliderRight) != null) {
+            scaleDir = curPoly().transform.right();
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
-    //THIS SUCKS -- RETHINK IT LATER
     public function startScaleDrag(mousePos) : Bool {
-        var i = collisionWithScaleHandle(mousePos);
-        if (i > -1) {
-            var anchors = [new Vector(-1,-1), new Vector(1,-1), new Vector(-1,1), new Vector(1,1)]; //hack attack
-            scaleDragAnchor = anchors[i];
+        if (collisionWithScaleHandle(mousePos)) {
             dragMouseStartPos = Luxe.camera.screen_point_to_world(mousePos);
             return true;
         }
@@ -468,6 +495,29 @@ class Main extends luxe.Game {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
         var drag = Vector.Subtract(mousePos, dragMouseStartPos);
 
+        var drag = Vector.Multiply(scaleDir, drag.dot(scaleDir));
+
+        /*
+        var scaleFactor = curPoly().transform.scale.toWorldSpace(curPoly().transform);
+
+        trace(scaleFactor);
+
+        drag.divide(scaleFactor);
+
+        trace(drag);
+        */
+
+        //curPoly().transform.scale.add(drag.toLocalSpace(curPoly().transform));
+        trace(curPoly().transform.scale);
+        trace((new Vector(0.00001, 0)).toLocalSpace(curPoly().transform));
+        trace((new Vector(0.00001, 0)).toWorldSpace(curPoly().transform));
+        curPoly().transform.scale.add( (new Vector(0.00001, 0.00)).toLocalSpace(curPoly().transform) );
+
+        dragMouseStartPos = mousePos;
+
+        switchLayerSelection(0); //hack (probably a better way to do this w/ listening?)
+
+        /*
         var b = curPoly().getBounds();
 
         drag.multiply(scaleDragAnchor);
@@ -478,7 +528,8 @@ class Main extends luxe.Game {
 
         dragMouseStartPos = mousePos;
 
-        switchLayerSelection(0);
+        switchLayerSelection(0); //hack (probably a better way to do this w/ listening?)
+        */
     }
 
     public function drawVertexHandles() {
