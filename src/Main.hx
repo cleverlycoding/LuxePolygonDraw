@@ -402,6 +402,55 @@ class Main extends luxe.Game {
         colorPickerMode(true);
     }
 
+    public function drawRotationHandle() {
+
+        var p = curPoly();
+        var b = p.getBounds();
+        var handlePos = Vector.Subtract( p.transform.pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
+
+        Luxe.draw.line({
+            p0 : curPoly().transform.pos,
+            p1 : handlePos,
+            color : new Color(255,0,255),
+            depth : aboveLayersDepth,
+            immediate : true
+        });
+
+        Luxe.draw.ring({
+            x : handlePos.x,
+            y : handlePos.y,
+            r : (15 / Luxe.camera.zoom),
+            color : new Color(255,0,255),
+            depth : aboveLayersDepth,
+            immediate : true
+        });
+    }
+
+    public function startRotationDrag(mousePos : Vector) : Bool {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+
+        var p = curPoly();
+        var b = p.getBounds();
+        var handlePos = Vector.Subtract( p.transform.pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
+
+        if (mousePos.distance(handlePos) < (15 / Luxe.camera.zoom)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function rotationDrag(mousePos) {
+        mousePos = Luxe.camera.screen_point_to_world(mousePos);
+
+        var p = curPoly();
+
+        var rotationDir = Vector.Subtract(mousePos, p.transform.pos);
+        p.rotation_z = Maths.degrees(rotationDir.angle2D) - 270;
+
+        switchLayerSelection(0);
+    }
+
     function scaleHandles() {
         var p = curPoly();
         var b = p.getBounds();
@@ -424,17 +473,17 @@ class Main extends luxe.Game {
         Luxe.draw.line({
             p0 : curPoly().transform.pos,
             p1 : handles.up,
-            color : new Color(255,255,255),
+            color : new Color(0,255,0),
             depth : aboveLayersDepth,
             immediate : true
         });
 
-        Luxe.draw.box({
+        Luxe.draw.rectangle({
             x : handles.up.x - (handles.size / 2),
             y : handles.up.y - (handles.size / 2),
             h : handles.size,
             w : handles.size,
-            color : new Color(255,255,255),
+            color : new Color(0,255,0),
             depth : aboveLayersDepth,
             immediate : true
         });
@@ -442,17 +491,17 @@ class Main extends luxe.Game {
         Luxe.draw.line({
             p0 : curPoly().transform.pos,
             p1 : handles.right,
-            color : new Color(255,255,255),
+            color : new Color(255,0,0),
             depth : aboveLayersDepth,
             immediate : true
         });
 
-        Luxe.draw.box({
+        Luxe.draw.rectangle({
             x : handles.right.x - (handles.size / 2),
             y : handles.right.y - (handles.size / 2),
             h : handles.size,
             w : handles.size,
-            color : new Color(255,255,255),
+            color : new Color(255,0,0),
             depth : aboveLayersDepth,
             immediate : true
         });
@@ -497,6 +546,15 @@ class Main extends luxe.Game {
 
         var drag = Vector.Multiply(scaleDir, drag.dot(scaleDir));
 
+        var dragLocal = drag.toLocalSpace(curPoly().transform);
+        dragLocal = dragLocal.add(curPoly().transform.pos.toWorldSpace(curPoly().transform));
+
+        trace(dragLocal);
+
+        trace ((new Vector(1, 0)).toLocalSpace(curPoly().transform).add(curPoly().transform.pos));
+
+        curPoly().transform.scale.add( (new Vector(0.01, 0)) );
+
         /*
         var scaleFactor = curPoly().transform.scale.toWorldSpace(curPoly().transform);
 
@@ -508,10 +566,13 @@ class Main extends luxe.Game {
         */
 
         //curPoly().transform.scale.add(drag.toLocalSpace(curPoly().transform));
+
+        /*
         trace(curPoly().transform.scale);
         trace((new Vector(0.00001, 0)).toLocalSpace(curPoly().transform));
         trace((new Vector(0.00001, 0)).toWorldSpace(curPoly().transform));
         curPoly().transform.scale.add( (new Vector(0.00001, 0.00)).toLocalSpace(curPoly().transform) );
+        */
 
         dragMouseStartPos = mousePos;
 
@@ -683,6 +744,7 @@ class EditState extends State {
     var draggingLayer : Bool;
     var draggingVertex : Bool;
     var draggingScale : Bool;
+    var draggingRotation : Bool;
 
     override function init() {
     } //init
@@ -696,6 +758,7 @@ class EditState extends State {
 
     override function update(dt:Float) {
         main.drawScaleHandles();
+        main.drawRotationHandle();
         main.drawVertexHandles();
     }
 
@@ -704,6 +767,10 @@ class EditState extends State {
         draggingScale = main.startScaleDrag(e.pos);
 
         if (!draggingScale) {
+            draggingRotation = main.startRotationDrag(e.pos);
+        }
+
+        if (!draggingRotation) {
             draggingVertex = main.startVertexDrag(e.pos);
         }
 
@@ -721,6 +788,9 @@ class EditState extends State {
             if (draggingScale) {
                 main.scaleDrag(e.pos);
             }
+            else if (draggingRotation) {
+                main.rotationDrag(e.pos);
+            } 
             else if (draggingVertex) {
                 main.vertexDrag(e.pos);
             }
@@ -736,6 +806,8 @@ class EditState extends State {
     override function onmouseup(e:MouseEvent) {
         draggingVertex = false;
         draggingLayer = false;
+        draggingRotation = false;
+        draggingScale = false;
     }
 
     override function onkeydown(e:KeyEvent) {
