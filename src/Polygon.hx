@@ -24,7 +24,15 @@ class Polygon extends Visual {
 		recenter();
 
 		if (jsonObj != null) {
+			if (jsonObj.name != null) {
+				name = jsonObj.name;
+			}
+
 			transform.pos = new Vector(jsonObj.pos.x, jsonObj.pos.y);
+
+			transform.scale = new Vector(jsonObj.scale.x, jsonObj.scale.y);
+
+			rotation_z = jsonObj.rotation;
 
 			this.color = new Color(jsonObj.color.r, jsonObj.color.g, jsonObj.color.b, jsonObj.color.a);
 
@@ -136,8 +144,14 @@ class Polygon extends Visual {
 		generateMesh(); //regenerate mesh whenever you add a point (probably inefficient)
 	}
 
-	public function getJsonRepresentation() {
+	public function jsonRepresentation() {
+		var jsonName = name;
+
 		var jsonPos = {x: transform.pos.x, y: transform.pos.y};
+
+		var jsonScale = {x: transform.scale.x, y: transform.scale.y};
+
+		var jsonRotation = rotation_z;
 
 		var jsonPoints = [];
 		for (p in points) {
@@ -146,7 +160,7 @@ class Polygon extends Visual {
 
 		var jsonColor = {r: color.r, g: color.g, b: color.b, a: color.a};
 
-		return {pos: jsonPos, color: jsonColor, points: jsonPoints};
+		return {name: jsonName, pos: jsonPos, scale: jsonScale, rotation: jsonRotation, color: jsonColor, points: jsonPoints};
 	}
 
 	function recenter() {

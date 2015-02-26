@@ -32,6 +32,8 @@ class LayerManager {
 				layers.push(l);
 				setLayerDepth(l, layers.length-1);
 			}
+
+			Luxe.scene.add(l);
 		}
 	}
 
@@ -64,11 +66,11 @@ class LayerManager {
 		}
 	}
 
-	public function getJsonRepresentation() {
+	public function jsonRepresentation() {
 		var jsonObj = {layers: []}
 		for (l in layers) {
 			var p = cast(l, Polygon);
-			jsonObj.layers.push(p.getJsonRepresentation());
+			jsonObj.layers.push(p.jsonRepresentation());
 		}
 		return jsonObj;
 	}

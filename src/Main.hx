@@ -19,12 +19,14 @@ import sys.io.FileOutput;
 import sys.io.FileInput;
 
 //ARL
+/*
 import Polyline;
 import Polygon;
 import ColorPicker;
 import Slider;
 import Edit;
 import LayerManager;
+*/
 
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
@@ -65,6 +67,9 @@ class Main extends luxe.Game {
     //collisions
     var polyCollision : CollisionPoly;
 
+    //play mode and components
+    var componentManager = new ComponentManager();
+
     override function ready() {
 
     	//instantiate objects
@@ -83,6 +88,7 @@ class Main extends luxe.Game {
         machine.add(new DrawState({name:"draw"}));
         machine.add(new PickColorState({name:"pickcolor"}));
         machine.add(new EditState({name:"edit"}));
+        machine.add(new PlayState({name:"play"}));
         machine.set("draw", this);
     } //ready
 
@@ -282,7 +288,7 @@ class Main extends luxe.Game {
     public function duplicateLayerInput(e:KeyEvent) {
         if (e.keycode == Key.key_d) {
             if (layers.getNumLayers() > 0) {    
-                var layerDupe = new Polygon({}, [], cast(layers.getLayer(curLayer), Polygon).getJsonRepresentation());
+                var layerDupe = new Polygon({}, [], cast(layers.getLayer(curLayer), Polygon).jsonRepresentation());
                 layerDupe.transform.pos.add(new Vector(10,10));
                 Edit.AddLayer(layers, layerDupe, curLayer);
                 switchLayerSelection(1);
@@ -337,9 +343,22 @@ class Main extends luxe.Game {
     public function saveLoadInput(e:KeyEvent) {
         if (e.keycode == Key.key_1) {
             //save
-            var output = File.write(Luxe.core.app.io.platform.dialog_save() + ".json", false);
+            var rawSaveFileName = Luxe.core.app.io.platform.dialog_save().split(".");
+            var saveFileName = rawSaveFileName[0];
 
-            var outObj = layers.getJsonRepresentation();
+            //scene file
+            var output = File.write(saveFileName + ".json", false);
+
+            var outObj = layers.jsonRepresentation();
+            var outStr = haxe.Json.stringify(outObj);
+            output.writeString(outStr);
+
+            output.close();
+
+            //component file
+            var output = File.write(saveFileName + "_components.json", false);
+
+            var outObj = componentManager.jsonRepresentation();
             var outStr = haxe.Json.stringify(outObj);
             output.writeString(outStr);
 
@@ -347,7 +366,11 @@ class Main extends luxe.Game {
         }
         else if (e.keycode == Key.key_2) {
             //load
-            var input = File.read(Luxe.core.app.io.platform.dialog_open(), false);
+            var rawOpenFileName = Luxe.core.app.io.platform.dialog_open().split(".");
+            var openFileName = rawOpenFileName[0];
+
+            //scene file
+            var input = File.read(openFileName + ".json", false);
 
             var inStr = input.readLine();
             var inObj = haxe.Json.parse(inStr);
@@ -356,6 +379,16 @@ class Main extends luxe.Game {
                 Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
                 switchLayerSelection(1);
             }
+
+            input.close();
+
+            //component file
+            var input = File.read(openFileName + "_components.json", false);
+
+            var inStr = input.readLine();
+            var inObj = haxe.Json.parse(inStr);
+
+            componentManager.updateFromJson(inObj);
 
             input.close();
         }
@@ -653,6 +686,19 @@ class Main extends luxe.Game {
         return cast(layers.getLayer(curLayer), Polygon);
     }
 
+    public function enterPlayMode() {
+        componentManager.activateComponents();
+    }
+
+    public function exitPlayMode() {
+        componentManager.deactivateComponents();
+    }
+
+    public function addSelectedLayerToComponentManager(e : KeyEvent) {
+        if (e.keycode == Key.key_c) {
+            componentManager.addEntity(curPoly(), "id" + componentManager.componentData.length); //hack names (add text input later)
+        }
+    }
 } //Main
 
 class DrawState extends State {
@@ -688,6 +734,8 @@ class DrawState extends State {
         main.saveLoadInput(e);
 
         main.zoomInput(e);
+
+        main.addSelectedLayerToComponentManager(e);
         
         //switch modes
         if (e.keycode == Key.key_l) {
@@ -697,6 +745,10 @@ class DrawState extends State {
         
         if (e.keycode == Key.key_e) {
             machine.set("edit", main);
+        }
+
+        if (e.keycode == Key.key_0) {
+            machine.set("play", main);
         }
     }
 
@@ -841,4 +893,28 @@ class PickColorState extends State {
             machine.set("draw", main);
         }
     }
-}   
+}  
+
+class PlayState extends State {
+
+    var main : Main;
+
+    override function init() {
+    } //init
+
+    override function onleave<T>( _main:T ) {
+        main.exitPlayMode();
+    } //onleave
+
+    override function onenter<T>( _main:T ) {
+        main = cast(_main, Main);
+        main.enterPlayMode();
+    } //onenter
+
+    override function onkeydown(e:KeyEvent) {
+        if (e.keycode == Key.key_0) {
+            //leave play mode
+            machine.set("draw", main);
+        }
+    }    
+} 
