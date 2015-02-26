@@ -53,7 +53,8 @@ class Main extends luxe.Game {
     //editting
     var dragMouseStartPos : Vector;
     var selectedVertex : Int;
-    var scaleDir : Vector;
+    var scaleDirLocal : Vector;
+    var scaleDirWorld : Vector;
 
     //ui
     var uiBatcher : Batcher;
@@ -446,7 +447,7 @@ class Main extends luxe.Game {
         var p = curPoly();
 
         var rotationDir = Vector.Subtract(mousePos, p.transform.pos);
-        p.rotation_z = Maths.degrees(rotationDir.angle2D) - 270;
+        p.rotation_z = Maths.degrees(rotationDir.angle2D) - 90 - (p.transform.scale.y > 0 ? 180 : 0); // - 270;
 
         switchLayerSelection(0);
     }
@@ -455,8 +456,8 @@ class Main extends luxe.Game {
         var p = curPoly();
         var b = p.getBounds();
 
-        var upPos = Vector.Add( p.transform.pos, p.transform.up().multiplyScalar(b.h * 0.7) );
-        var rightPos = Vector.Add( p.transform.pos, p.transform.right().multiplyScalar(b.w * 0.7) );
+        var upPos = Vector.Add( p.transform.pos, p.transform.up().multiplyScalar(b.h * 0.5 /* * 0.7 */) );
+        var rightPos = Vector.Add( p.transform.pos, p.transform.right().multiplyScalar(b.w * 0.5 /* * 0.7 */) );
 
         var handleSize = 10 / Luxe.camera.zoom;
 
@@ -464,10 +465,6 @@ class Main extends luxe.Game {
     }
 
     public function drawScaleHandles() {
-        
-        //curPoly().rotation_z += 0.1;
-        //curPoly().transform.rotate(0.01);
-
         var handles = scaleHandles();
 
         Luxe.draw.line({
@@ -519,11 +516,13 @@ class Main extends luxe.Game {
 
 
         if (Collision.test(mouseCollider, handleColliderUp) != null) {
-            scaleDir = curPoly().transform.up();
+            scaleDirLocal = new Vector(0,1); // NOT A GREAT WAY TO DO THIS
+            //scaleDirWorld = curPoly().transform.up();
             return true;
         }
         else if (Collision.test(mouseCollider, handleColliderRight) != null) {
-            scaleDir = curPoly().transform.right();
+            scaleDirLocal = new Vector(1,0);
+            //scaleDirWorld = curPoly().transform.right();
             return true;
         }
         else {
@@ -539,58 +538,35 @@ class Main extends luxe.Game {
         return false;
     }
 
-    //THIS SUCKS -- RETHINK IT LATER
+    //this mostly works (but could be better)
     public function scaleDrag(mousePos) {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
         var drag = Vector.Subtract(mousePos, dragMouseStartPos);
 
-        var drag = Vector.Multiply(scaleDir, drag.dot(scaleDir));
+        if (scaleDirLocal.x != 0) {
+            scaleDirWorld = curPoly().transform.right();
+        }
+        else {
+            scaleDirWorld = curPoly().transform.up();
+        }
 
-        var dragLocal = drag.toLocalSpace(curPoly().transform);
-        dragLocal = dragLocal.add(curPoly().transform.pos.toWorldSpace(curPoly().transform));
+        var scaleDelta = Vector.Multiply(scaleDirLocal, drag.dot(scaleDirWorld));
+        scaleDelta.x = (scaleDelta.x / curPoly().getBounds().w) * curPoly().transform.scale.x * 2;
+        scaleDelta.y = (scaleDelta.y / curPoly().getBounds().h) * curPoly().transform.scale.y * 2;
 
-        trace(dragLocal);
+        curPoly().transform.scale.add(scaleDelta);
 
-        trace ((new Vector(1, 0)).toLocalSpace(curPoly().transform).add(curPoly().transform.pos));
-
-        curPoly().transform.scale.add( (new Vector(0.01, 0)) );
-
-        /*
-        var scaleFactor = curPoly().transform.scale.toWorldSpace(curPoly().transform);
-
-        trace(scaleFactor);
-
-        drag.divide(scaleFactor);
-
-        trace(drag);
-        */
-
-        //curPoly().transform.scale.add(drag.toLocalSpace(curPoly().transform));
-
-        /*
-        trace(curPoly().transform.scale);
-        trace((new Vector(0.00001, 0)).toLocalSpace(curPoly().transform));
-        trace((new Vector(0.00001, 0)).toWorldSpace(curPoly().transform));
-        curPoly().transform.scale.add( (new Vector(0.00001, 0.00)).toLocalSpace(curPoly().transform) );
-        */
+        //hack to avoid the horrible problems that occur when scale == 0
+        if (curPoly().transform.scale.x == 0) {
+            curPoly().transform.scale.x = 0.01;
+        }
+        if (curPoly().transform.scale.y == 0) {
+            curPoly().transform.scale.y = 0.01;
+        }
 
         dragMouseStartPos = mousePos;
 
         switchLayerSelection(0); //hack (probably a better way to do this w/ listening?)
-
-        /*
-        var b = curPoly().getBounds();
-
-        drag.multiply(scaleDragAnchor);
-
-        var scalePercent = new Vector(drag.x / b.w, drag.y / b.h);
-
-        curPoly().transform.scale.add(scalePercent);
-
-        dragMouseStartPos = mousePos;
-
-        switchLayerSelection(0); //hack (probably a better way to do this w/ listening?)
-        */
     }
 
     public function drawVertexHandles() {
