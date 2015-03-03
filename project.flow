@@ -11,6 +11,7 @@
     },
 
     build : {
+      flags : ["--macro include('components', true)"],
       dependencies : {
         luxe : '*',
         poly2trihx : '*'

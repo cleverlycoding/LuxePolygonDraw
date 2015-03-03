@@ -340,6 +340,21 @@ class Main extends luxe.Game {
         }
     }
 
+    public function addCircleInput(e:KeyEvent) {
+        if (e.keycode == Key.key_t) {
+            var worldMousePos = Luxe.camera.screen_point_to_world(Luxe.screen.cursor.pos);
+            var points : Array<Vector> = [];
+            points = points.makeCirclePolyline(worldMousePos, (Luxe.screen.w / 10) / Luxe.camera.zoom);
+
+            trace(points);
+
+            //var newPLine = new Polyline({color: picker.color}, points);
+            var newPolygon = new Polygon({color: curColorIcon.color.clone()}, points);
+            Edit.AddLayer(layers, newPolygon, curLayer+1);
+            switchLayerSelection(1);
+        }
+    }
+
     public function saveLoadInput(e:KeyEvent) {
         if (e.keycode == Key.key_1) {
             //save
@@ -694,9 +709,12 @@ class Main extends luxe.Game {
         componentManager.deactivateComponents();
     }
 
-    public function addSelectedLayerToComponentManager(e : KeyEvent) {
+    public function addSelectedLayerToComponentManagerInput(e : KeyEvent) {
         if (e.keycode == Key.key_c) {
-            componentManager.addEntity(curPoly(), "id" + componentManager.componentData.length); //hack names (add text input later)
+            //load
+            var rawOpenFileName = Luxe.core.app.io.platform.dialog_open( "Load Component", [{extension:"hx"}] ).split(".");
+            var openFileName = rawOpenFileName[0];
+            componentManager.addComponent(curPoly(), "TestComponent");
         }
     }
 } //Main
@@ -735,7 +753,9 @@ class DrawState extends State {
 
         main.zoomInput(e);
 
-        main.addSelectedLayerToComponentManager(e);
+        main.addSelectedLayerToComponentManagerInput(e);
+
+        main.addCircleInput(e);
         
         //switch modes
         if (e.keycode == Key.key_l) {

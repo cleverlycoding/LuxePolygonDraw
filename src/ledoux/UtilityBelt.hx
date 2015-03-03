@@ -4,6 +4,7 @@ import luxe.Vector;
 import luxe.Transform;
 import luxe.Matrix;
 import luxe.Quaternion;
+import luxe.utils.Maths;
 
 using Lambda;
 
@@ -38,6 +39,11 @@ class VectorExtender {
 	static public function absolute(v:Vector) : Vector {
 		return new Vector(Math.abs(v.x), Math.abs(v.y));
 	}
+
+	static public function setFromAngle(v:Vector, radians:Float) : Vector {
+		v = new Vector(Math.cos(radians), Math.sin(radians));
+		return v;
+	}
 }
 
 class TransformExtender {
@@ -53,9 +59,14 @@ class TransformExtender {
 		return rightV;
 	}
 
-	static public function rotate(t:Transform, a:Float) { //rotates right
+	static public function rotate(t:Transform, a:Float) { //rotates right (remember a == radians --- change later?)
 		var rot = ( new Quaternion() ).setFromAxisAngle( new Vector(0,0,1), a );
 		t.rotation.multiply(rot);
+	}
+
+	static public function rotateY(t:Transform, a:Float) { //rotates "inward"
+        var rot = ( new Quaternion() ).setFromAxisAngle( new Vector(0,1,0), a );
+        t.rotation.multiply(rot);
 	}
 }
 
@@ -70,6 +81,22 @@ class ArrayExtender {
 }
 
 class PolylineExtender {
+	static public function makeCirclePolyline(points:Array<Vector>, center:Vector, radius:Float, ?steps:Int) {
+		points = [];
+		if (steps == null) steps = 60;
+		trace(steps);
+		for (i in 0 ... steps) {
+			trace(i);
+			var degrees : Float = (i / steps) * 360.0;
+			trace(degrees);
+			var pDir = VectorExtender.setFromAngle(new Vector(), Maths.radians(degrees));
+			var p = Vector.Add(center, pDir.multiplyScalar(radius));
+			trace(p);
+			points.push(p);
+		}
+		return points;
+	}
+
 	static public function toLocalSpace(points:Array<Vector>, t:Transform) : Array<Vector> {
 		return ArrayExtender.clone(points).map( function(p) { return VectorExtender.toLocalSpace(p, t); } );
 	}
