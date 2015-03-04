@@ -44,6 +44,10 @@ class VectorExtender {
 		v = new Vector(Math.cos(radians), Math.sin(radians));
 		return v;
 	}
+
+	static public function tangent2D(v:Vector) : Vector {
+		return new Vector(-v.y, v.x);
+	}
 }
 
 class TransformExtender {

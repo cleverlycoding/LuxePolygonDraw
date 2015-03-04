@@ -344,7 +344,7 @@ class Main extends luxe.Game {
         if (e.keycode == Key.key_t) {
             var worldMousePos = Luxe.camera.screen_point_to_world(Luxe.screen.cursor.pos);
             var points : Array<Vector> = [];
-            points = points.makeCirclePolyline(worldMousePos, (Luxe.screen.w / 10) / Luxe.camera.zoom);
+            points = points.makeCirclePolyline(worldMousePos, (Luxe.screen.w / 50) / Luxe.camera.zoom);
 
             trace(points);
 
@@ -374,7 +374,7 @@ class Main extends luxe.Game {
             var output = File.write(saveFileName + "_components.json", false);
 
             var outObj = componentManager.jsonRepresentation();
-            var outStr = haxe.Json.stringify(outObj);
+            var outStr = haxe.Json.stringify(outObj, null, "    ");
             output.writeString(outStr);
 
             output.close();
@@ -387,7 +387,12 @@ class Main extends luxe.Game {
             //scene file
             var input = File.read(openFileName + ".json", false);
 
-            var inStr = input.readLine();
+            //read all - regardless of how many lines it is
+            var inStr = "";
+            while (!input.eof()) {
+                inStr += input.readLine();
+            }
+
             var inObj = haxe.Json.parse(inStr);
 
             for (l in cast(inObj.layers, Array<Dynamic>)) {
@@ -400,7 +405,12 @@ class Main extends luxe.Game {
             //component file
             var input = File.read(openFileName + "_components.json", false);
 
-            var inStr = input.readLine();
+            //read all - regardless of how many lines it is
+            var inStr = "";
+            while (!input.eof()) {
+                inStr += input.readLine();
+            }
+
             var inObj = haxe.Json.parse(inStr);
 
             componentManager.updateFromJson(inObj);
@@ -714,7 +724,9 @@ class Main extends luxe.Game {
             //load
             var rawOpenFileName = Luxe.core.app.io.platform.dialog_open( "Load Component", [{extension:"hx"}] ).split(".");
             var openFileName = rawOpenFileName[0];
-            componentManager.addComponent(curPoly(), "TestComponent");
+            var fileNameSplit = openFileName.split("/"); //need to change for other OSs?
+            var className = fileNameSplit[fileNameSplit.length-1];
+            componentManager.addComponent(curPoly(), className);
         }
     }
 } //Main

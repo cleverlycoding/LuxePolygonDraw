@@ -1,0 +1,13 @@
+[
+    {
+        "components": [
+            {
+                "name": "BallControl"
+            },
+            {
+                "name": "TrailRenderer"
+            }
+        ],
+        "name": "id0"
+    }
+]
