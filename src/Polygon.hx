@@ -10,7 +10,8 @@ import luxe.collision.shapes.Polygon in CollisionPoly;
 
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
-using ledoux.UtilityBelt.ArrayExtender;
+
+using Lambda;
 
 class Polygon extends Visual {
 	var points:Array<Vector>;
@@ -170,6 +171,7 @@ class Polygon extends Visual {
 	}
 
 	public function collisionBounds() : CollisionPoly {
-		return new CollisionPoly(transform.pos.x, transform.pos.y, cast(points.clone()));
+		var worldPoints = getPoints().map( function(p) { return p.subtract(pos); } );
+		return worldPoints.collisionShape(transform.pos);
 	}
 }

@@ -5,8 +5,12 @@ import luxe.Transform;
 import luxe.Matrix;
 import luxe.Quaternion;
 import luxe.utils.Maths;
+import luxe.collision.shapes.Polygon in PolygonCollisionShape;
 
 using Lambda;
+using ledoux.UtilityBelt.VectorExtender;
+using ledoux.UtilityBelt.TransformExtender;
+using ledoux.UtilityBelt.PolylineExtender;
 
 class VectorExtender {
 	static public function distance(pos1:Vector, pos2:Vector) : Float {
@@ -74,39 +78,33 @@ class TransformExtender {
 	}
 }
 
-class ArrayExtender {
-	static public function clone(arr:Array<Dynamic>) : Array<Dynamic> {
-		var arrClone = [];
-		for (a in arr) {
-			arrClone.push(a.clone());
-		}
-		return arrClone;
-	}
-}
-
 class PolylineExtender {
+	static public function clone(points:Array<Vector>) : Array<Vector> {
+		var polylineClone = [];
+		for (p in points) {
+			polylineClone.push(p.clone());
+		}
+		return polylineClone;
+	}
+
 	static public function makeCirclePolyline(points:Array<Vector>, center:Vector, radius:Float, ?steps:Int) {
 		points = [];
 		if (steps == null) steps = 60;
-		trace(steps);
 		for (i in 0 ... steps) {
-			trace(i);
 			var degrees : Float = (i / steps) * 360.0;
-			trace(degrees);
-			var pDir = VectorExtender.setFromAngle(new Vector(), Maths.radians(degrees));
+			var pDir = (new Vector()).setFromAngle(Maths.radians(degrees));
 			var p = Vector.Add(center, pDir.multiplyScalar(radius));
-			trace(p);
 			points.push(p);
 		}
 		return points;
 	}
 
 	static public function toLocalSpace(points:Array<Vector>, t:Transform) : Array<Vector> {
-		return ArrayExtender.clone(points).map( function(p) { return VectorExtender.toLocalSpace(p, t); } );
+		return points.clone().map( function(p) { return p.toLocalSpace(t); } );
 	}
 
 	static public function toWorldSpace(points:Array<Vector>, t:Transform) : Array<Vector> {
-		return ArrayExtender.clone(points).map( function(p) { return VectorExtender.toWorldSpace(p, t); } );
+		return points.clone().map( function(p) { return p.toWorldSpace(t); } );
 	}
 
 	static public function testLineIntersection(a:Vector, b:Vector, c:Vector, d:Vector) {
@@ -118,11 +116,11 @@ class PolylineExtender {
 
 		var qMinusP = Vector.Subtract(q, p);
 
-		var rCrossS = VectorExtender.cross2D(r, s);
+		var rCrossS = r.cross2D(s);
 
 		if (rCrossS != 0) {
-			var t = VectorExtender.cross2D(qMinusP, s) / rCrossS;
-			var u = VectorExtender.cross2D(qMinusP, r) / rCrossS;
+			var t = qMinusP.cross2D(s) / rCrossS;
+			var u = qMinusP.cross2D(r) / rCrossS;
 
 			if (t <= 1 && t >= 0 && u <= 1 && u >= 0) {
 				var rTimesT = Vector.Multiply(r, t);
@@ -178,5 +176,9 @@ class PolylineExtender {
 		}
 		center.divideScalar(points.length);
 		return center;
+	}
+
+	static public function collisionShape(points:Array<Vector>, pos:Vector) {
+		return new PolygonCollisionShape(pos.x, pos.y, points.clone());
 	}
 }

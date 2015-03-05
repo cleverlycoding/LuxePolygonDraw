@@ -1,0 +1,53 @@
+[
+    {
+        "components": [
+            {
+                "name": "BallControl"
+            },
+            {
+                "name": "TrailRenderer"
+            },
+            {
+                "isStatic": false,
+                "name": "PolygonCollider"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "isStatic": true,
+                "name": "PolygonCollider"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "isStatic": true,
+                "name": "PolygonCollider"
+            }
+        ],
+        "name": "id2"
+    },
+    {
+        "components": [
+            {
+                "isStatic": true,
+                "name": "PolygonCollider"
+            }
+        ],
+        "name": "id3"
+    },
+    {
+        "components": [
+            {
+                "isStatic": false,
+                "name": "PolygonCollider"
+            }
+        ],
+        "name": "id4"
+    }
+]
