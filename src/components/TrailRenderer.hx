@@ -8,6 +8,7 @@ import phoenix.geometry.*;
 import phoenix.Batcher;
 import luxe.Color;
 import luxe.utils.Maths;
+import luxe.Visual;
 
 using ledoux.UtilityBelt.VectorExtender;
 
@@ -25,7 +26,7 @@ class TrailRenderer extends EditorComponent {
 	override function init() {
 		points = [pos.clone()];
 
-		trailGeometry = new Geometry({batcher: Luxe.renderer.batcher, primitive_type: PrimitiveType.triangles});
+		trailGeometry = new Geometry({batcher: Luxe.renderer.batcher, primitive_type: PrimitiveType.triangles, depth: cast(entity, Visual).geometry.depth - 0.1});
 	}
 
 	override function update(dt : Float) {

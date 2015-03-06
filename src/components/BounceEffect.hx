@@ -24,7 +24,8 @@ class BounceEffect extends EditorComponent {
 	public function bounce() {
 		entity.transform.scale = startScale.clone();
 
-		var shrinkScale = Vector.Multiply(startScale, 0.7);
+		//var shrinkScale = Vector.Multiply(startScale, 0.9);
+		var shrinkScale = new Vector(startScale.x * 0.9, startScale.y); //temp hack
 		
 		Actuate.tween( entity.transform.scale, 0.1, {x: shrinkScale.x, y: shrinkScale.y} )
 			.onComplete(function(){

@@ -79,6 +79,20 @@ class TransformExtender {
 }
 
 class PolylineExtender {
+	static public function closestIndex(points:Array<Vector>, otherPoint:Vector) : Int {
+		var closestIndex = 0;
+		for (i in 0 ... points.length) {
+			if (otherPoint.distance(points[i]) < otherPoint.distance(points[closestIndex])) {
+				closestIndex = i;
+			}
+		}
+		return closestIndex;
+	}
+
+	static public function closestPoint(points:Array<Vector>, otherPoint:Vector) : Vector {
+		return points[points.closestIndex(otherPoint)];
+	}
+
 	static public function clone(points:Array<Vector>) : Array<Vector> {
 		var polylineClone = [];
 		for (p in points) {

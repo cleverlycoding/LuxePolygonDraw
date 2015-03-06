@@ -19,8 +19,11 @@ class ComponentManager {
 	}
 
 	function addEntry(e : Entity) {
+		//remove and re-add to register name change (hack)
+		Luxe.scene.remove(e);
 		e.name = "id" + componentData.length;
 		Luxe.scene.add(e);
+		
 		var emptyComponentData = {
 			name : e.name, //need a better way to set names eventually than the non-descriptive automatic ones
 			components : []

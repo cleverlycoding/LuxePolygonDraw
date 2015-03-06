@@ -33,7 +33,7 @@ class LayerManager {
 				setLayerDepth(l, layers.length-1);
 			}
 
-			Luxe.scene.add(l);
+			//Luxe.scene.add(l);
 		}
 	}
 

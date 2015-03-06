@@ -14,7 +14,7 @@ using ledoux.UtilityBelt.PolylineExtender;
 using Lambda;
 
 class Polygon extends Visual {
-	var points:Array<Vector>;
+	public var points:Array<Vector>;
 	var bounds:Rectangle;
 
 	public override function new(_options:luxe.options.VisualOptions, points:Array<Vector>, ?jsonObj) {
@@ -26,7 +26,9 @@ class Polygon extends Visual {
 
 		if (jsonObj != null) {
 			if (jsonObj.name != null) {
+				Luxe.scene.remove(this);
 				name = jsonObj.name;
+				Luxe.scene.add(this);
 			}
 
 			transform.pos = new Vector(jsonObj.pos.x, jsonObj.pos.y);

@@ -1,0 +1,17 @@
+[
+    {
+        "components": [
+            {
+                "name": "BallControl"
+            },
+            {
+                "name": "TrailRenderer"
+            },
+            {
+                "isStatic": false,
+                "name": "PolygonCollider"
+            }
+        ],
+        "name": "id0"
+    }
+]

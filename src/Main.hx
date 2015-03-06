@@ -43,7 +43,7 @@ class Main extends luxe.Game {
 	var layers = new LayerManager(0, 1, 1000);
 	var aboveLayersDepth = 10001;
 	var curLayer = 0;
-	var selectedLayerOutline:Polyline;
+	public var selectedLayerOutline : Polyline;
 
 	//color picker
 	var picker : ColorPicker;
@@ -59,7 +59,7 @@ class Main extends luxe.Game {
     var scaleDirWorld : Vector;
 
     //ui
-    var uiBatcher : Batcher;
+    public var uiBatcher : Batcher;
 
     //states
     var machine : States;
@@ -90,6 +90,23 @@ class Main extends luxe.Game {
         machine.add(new EditState({name:"edit"}));
         machine.add(new PlayState({name:"play"}));
         machine.set("draw", this);
+
+        //HACK TO LOAD TEST LEVEL IMMEDIATELY
+        Luxe.loadJSON("assets/prototype5.json", function(j) {
+            var inObj = j.json;
+
+            for (l in cast(inObj.layers, Array<Dynamic>)) {
+                Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
+                switchLayerSelection(1);
+            }
+
+            Luxe.loadJSON("assets/prototype5_components.json", function(j) {
+                var inObj = j.json;
+                componentManager.updateFromJson(inObj);
+
+                machine.set("play", this);
+            });
+        });
     } //ready
 
     override function onkeydown(e:KeyEvent) {
@@ -356,6 +373,9 @@ class Main extends luxe.Game {
     }
 
     public function saveLoadInput(e:KeyEvent) {
+
+        //HACK for ios
+        /*
         if (e.keycode == Key.key_1) {
             //save
             var rawSaveFileName = Luxe.core.app.io.platform.dialog_save().split(".");
@@ -417,6 +437,7 @@ class Main extends luxe.Game {
 
             input.close();
         }
+        */
     }
 
     public function zoomInput(e:KeyEvent) {
@@ -720,6 +741,8 @@ class Main extends luxe.Game {
     }
 
     public function addSelectedLayerToComponentManagerInput(e : KeyEvent) {
+        //HACK IOS
+        /*
         if (e.keycode == Key.key_c) {
             //load
             var rawOpenFileName = Luxe.core.app.io.platform.dialog_open( "Load Component", [{extension:"hx"}] ).split(".");
@@ -728,6 +751,7 @@ class Main extends luxe.Game {
             var className = fileNameSplit[fileNameSplit.length-1];
             componentManager.addComponent(curPoly(), className);
         }
+        */
     }
 } //Main
 
@@ -936,11 +960,19 @@ class PlayState extends State {
 
     override function onleave<T>( _main:T ) {
         main.exitPlayMode();
+
+        //HACK
+        Luxe.renderer.add_batch(main.uiBatcher);
+        Luxe.renderer.batcher.add(main.selectedLayerOutline.geometry);
     } //onleave
 
     override function onenter<T>( _main:T ) {
         main = cast(_main, Main);
         main.enterPlayMode();
+
+        //HACK
+        Luxe.renderer.remove_batch(main.uiBatcher);
+        Luxe.renderer.batcher.remove(main.selectedLayerOutline.geometry); 
     } //onenter
 
     override function onkeydown(e:KeyEvent) {
