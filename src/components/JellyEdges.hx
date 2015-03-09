@@ -8,6 +8,9 @@ import phoenix.geometry.Vertex;
 
 import Polygon;
 
+import components.PolygonCollider;
+import components.PolygonCollider.PolygonCollision;
+
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
 
@@ -34,9 +37,6 @@ class JellyEdges extends EditorComponent {
 			connectNeighbors(jellyVertices[i], jellyVertices[nextIndex]);
 		}
 
-		//test
-		//jellyVertices[Maths.random_int(0,jellyVertices.length)].addForce(new Vector(0, 100)); //jiggle random vertex
-
 		entity.events.listen('collision_enter', on_collision_enter);
 	}
 
@@ -47,6 +47,7 @@ class JellyEdges extends EditorComponent {
 	}
 
 	override function onremoved() {
+
 	}
 
 	function connectNeighbors(n1 : JellyVertex, n2 : JellyVertex) {
@@ -54,11 +55,23 @@ class JellyEdges extends EditorComponent {
 		n2.addNeighbor(n1);
 	}
 
-	function on_collision_enter(collision) {
+	function on_collision_enter(collision : PolygonCollision) {
 		if (canJiggle) {
-			jellyVertices[polygon.getPoints().closestIndex(collision.other.entity.pos)].addForce(collision.data.unitVector.multiplyScalar(100));
-			canJiggle = false;
-			Luxe.timer.schedule( 2, function() {canJiggle = true;} );
+
+			//hack to find closest point
+			var hitIndex = polygon.getPoints().closestIndex(collision.other.entity.pos);
+
+			if (hitIndex < jellyVertices.length) {
+
+				//apply force to vertex
+				var hitVertex = jellyVertices[hitIndex];
+				hitVertex.addForce(collision.data.unitVector.multiplyScalar(100));
+
+				//wait 2 seconds before applying another force
+				canJiggle = false;
+				Luxe.timer.schedule( 2, function() {canJiggle = true;} );
+
+			}
 		}
 	}
 

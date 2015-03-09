@@ -12,6 +12,11 @@ using ledoux.UtilityBelt.PolylineExtender;
 import luxe.collision.ShapeDrawerLuxe;
 import luxe.Color;
 
+typedef PolygonCollision = {
+	public var other : PolygonCollider;
+	public var data : CollisionData;
+}
+
 class PolygonCollider extends EditorComponent {
 
 	public static var ColliderList : Array<PolygonCollider> = [];
@@ -120,9 +125,4 @@ class PolygonCollider extends EditorComponent {
 
 		return hasTestedCollisionsThisFrame; //return after resetting flags
 	}
-}
-
-class PolygonCollision {
-	var other : PolygonCollider;
-	var data : CollisionData;
 }

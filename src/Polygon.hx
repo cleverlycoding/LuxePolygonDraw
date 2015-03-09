@@ -51,7 +51,6 @@ class Polygon extends Visual {
 		});
 
 		generateMesh();
-
 	}
 
 	function generateMesh() {

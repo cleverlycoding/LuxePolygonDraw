@@ -12,11 +12,15 @@ import luxe.collision.Collision;
 import luxe.collision.shapes.Circle in CollisionCircle;
 import luxe.collision.shapes.Polygon in CollisionPoly;
 import luxe.utils.Maths;
+import snow.types.Types;
 
 //HAXE
+//IOS hack
+/*
 import sys.io.File;
 import sys.io.FileOutput;
 import sys.io.FileInput;
+*/
 
 //ARL
 /*
@@ -70,7 +74,13 @@ class Main extends luxe.Game {
     //play mode and components
     var componentManager = new ComponentManager();
 
+    //camera and zoom
+    var refSize = new Vector(960, 640);
+
     override function ready() {
+        trace(Luxe.screen.size);
+        trace(Luxe.camera.center);
+        trace(Luxe.screen.mid);
 
     	//instantiate objects
         selectedLayerOutline = new Polyline({depth: aboveLayersDepth}, []);
@@ -129,6 +139,32 @@ class Main extends luxe.Game {
     }
 
     override function onmouseup(e:MouseEvent) {
+    }
+
+    override function onwindowresized(e:WindowEvent) {
+        //Luxe.camera.viewport.w = e.event.x;
+        //Luxe.camera.viewport.h = e.event.y;
+        
+        //trace(e.event.x);
+        //trace(Luxe.screen.w);
+        //trace(Luxe.camera.pos);
+
+
+        var tmp = Luxe.camera.center.clone();
+        Luxe.camera.size = Luxe.screen.size.clone();
+        trace(Luxe.screen.mid);
+        trace(Luxe.camera.center);
+        //Luxe.camera.center = tmp;
+        trace(Luxe.camera.center);
+
+        
+
+        Luxe.camera.zoom = Luxe.screen.size.y / refSize.y;
+        Luxe.camera.pos = Vector.Subtract(Luxe.screen.size, Vector.Multiply(refSize, 1 / Luxe.camera.zoom));
+
+
+        //trace(Luxe.camera.viewport);
+        //Luxe.camera.center = Luxe.screen.mid.clone();
     }
 
     function createUI () {
