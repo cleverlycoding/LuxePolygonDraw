@@ -48,12 +48,11 @@ class Bone extends Visual {
 	}
 
 	public function drawEditHandles() {
-
-		trace(scale);
-		trace(pos);
-		var worldPos = pos.toWorldSpace(transform);
-		trace(worldPos);
-		trace("_--");
+		
+		var worldPos = pos.clone();
+		if (transform.parent != null) {
+			worldPos = pos.toWorldSpace(transform.parent);
+		}
 
 		//scale handle
 		var scaleHandlePos = worldPos.clone().add(transform.up().multiplyScalar(length));

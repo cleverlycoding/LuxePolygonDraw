@@ -22,38 +22,16 @@ class VectorExtender {
 		return (v1.x * v2.y) - (v1.y * v2.x);
 	}
 
-	//DO THESE FUNCTIONS NEED RECURSION?? (check later)
+	//these two functions are probably unnecessary
 	static public function toLocalSpace(v:Vector, t:Transform) : Vector {
 		var localV : Vector;
-		if (t.parent != null) {
-			localV = toLocalSpace(v, t.parent);
-		}
 		localV = v.clone().transform(t.world.matrix.inverse());
 		return localV;
 	}
 
 	static public function toWorldSpace(v:Vector, t:Transform) : Vector {
-		/*
 		var worldV : Vector;
 		worldV = v.clone().transform(t.world.matrix);
-		worldV.subtract(t.origin);
-		*/
-
-		//var worldV : Vector;
-		//worldV = v.clone().add(t.origin);
-		
-		var worldV : Vector;
-		worldV = v.clone().transform(t.world.matrix);
-		if (t.parent != null) {
-			worldV = worldV.toWorldSpace(t.parent);
-		}
-		
-		/*
-		if (t.parent != null) {
-			worldV = toWorldSpace(worldV, t.parent);
-		}
-		*/
-		
 		return worldV;
 	}
 
