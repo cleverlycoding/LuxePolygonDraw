@@ -9,6 +9,7 @@ import phoenix.geometry.*;
 import phoenix.Batcher;
 import luxe.States;
 import luxe.collision.Collision;
+import luxe.collision.ShapeDrawerLuxe;
 import luxe.collision.shapes.Circle in CollisionCircle;
 import luxe.collision.shapes.Polygon in CollisionPoly;
 import luxe.utils.Maths;
@@ -1000,63 +1001,117 @@ class AnimationState extends State {
 
     //bones
     var boneList : Array<Bone> = [];
+    var selectedBone : Bone;
 
     //making a new bone
     var startPos : Vector;
     var endPos : Vector;
 
-    var selectedBone : Bone;
+    //modes
+    var isMakingBone : Bool; 
+    var isRotatingBone : Bool;   
+
+    //debug
+    var drawer : ShapeDrawerLuxe = new ShapeDrawerLuxe();
+
+    //
+    var curFrame : Int = 0;
 
     override function init() {
     } //init
 
     override function onenter<T>( _main:T ) {
         main = cast(_main, Main);
-        Bone.SkeletonBatcher = main.uiBatcher;
     } //onenter
 
     override function onleave<T>( _main:T ) {
     } //onleave
 
     override function onmousedown(e:MouseEvent) {
-        startPos = Luxe.camera.screen_point_to_world(e.pos);
-        endPos = startPos.clone();
+        var worldMousePos = Luxe.camera.screen_point_to_world(e.pos);
+        var mouseCollisionShape = new CollisionCircle(worldMousePos.x, worldMousePos.y, 10);
+
+        if (selectedBone != null) {
+            if (Collision.test(mouseCollisionShape, selectedBone.rotationHandleCollisionShape()) != null) {
+                isRotatingBone = true;
+            }
+        }
+
+        if (!isRotatingBone) {
+
+            isMakingBone = true;
+            for (b in boneList) {
+                if (Collision.test(mouseCollisionShape, b.collisionShape()) != null) {
+                    selectBone(b);
+                    isMakingBone = false;
+                    break;
+                }
+            }
+
+            if (isMakingBone) {
+                startPos = Luxe.camera.screen_point_to_world(e.pos);
+                endPos = startPos.clone(); 
+            }
+
+        }
+        
     }
 
     override function onmousemove(e:MouseEvent) {
         if (Luxe.input.mousedown(1)) {
-            endPos = Luxe.camera.screen_point_to_world(e.pos);
+            if (isMakingBone) {
+                endPos = Luxe.camera.screen_point_to_world(e.pos);
+            }
+            else if (isRotatingBone) {
+                selectedBone.rotation_z = Maths.degrees( Luxe.camera.screen_point_to_world(e.pos).subtract(selectedBone.worldPos()).angle2D );
+                selectedBone.rotation_z += 90;
+                //surely there must be a better way to do this? why isn't this all automatic?
+                if (selectedBone.parent != null) {
+                    selectedBone.rotation_z = selectedBone.parent.transform.worldRotationToLocalRotationZ(selectedBone.rotation_z);
+                }
+            }
         }
     }
 
     override function onmouseup(e:MouseEvent) {
        
-        if (selectedBone != null) {
-            var b = new Bone({pos : startPos.toLocalSpace(selectedBone.transform), parent : selectedBone}, startPos.distance(endPos));
-            b.rotation_z = selectedBone.transform.worldRotationToLocalRotationZ( Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90 );
-            
-            boneList.push(b);
-            selectedBone = b;
-        }
-        else {
-            var b = new Bone({pos : startPos}, startPos.distance(endPos));
-            b.rotation_z = Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90;
+       if (isMakingBone) {
+            if (selectedBone != null) {
+                var b = new Bone({
+                        pos : startPos.toLocalSpace(selectedBone.transform), 
+                        parent : selectedBone,
+                        batcher : main.uiBatcher
+                    }, 
+                    startPos.distance(endPos),
+                    selectedBone.transform.worldRotationToLocalRotationZ( Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90 )
+                );
+                
+                boneList.push(b);
+                selectBone(b);
+            }
+            else {
+                var b = new Bone({
+                        pos : startPos, 
+                        batcher : main.uiBatcher
+                    }, 
+                    startPos.distance(endPos), 
+                    Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90
+                );
 
-            boneList.push(b);
-            selectedBone = b;
+                boneList.push(b);
+                selectBone(b);
+            }
         }
         
+        isMakingBone = false;
+        isRotatingBone = false;
     }
 
     override function update(dt:Float) {
 
-        for (b in boneList) {
-            //b.rotation_z += b.testRot * dt;
-        }
-
         if (selectedBone != null) selectedBone.drawEditHandles();
 
-        if (Luxe.input.mousedown(1)) {
+        if (isMakingBone) {
             Luxe.draw.line({
                 p0 : startPos,
                 p1 : endPos,
@@ -1065,14 +1120,52 @@ class AnimationState extends State {
                 batcher : main.uiBatcher
             });
         }
+
+        Luxe.draw.text({
+            color: new Color(255,255,255),
+            pos : new Vector(Luxe.screen.mid.x, 30),
+            point_size : 20,
+            text : "Frame: " + curFrame,
+            immediate : true,
+            batcher : main.uiBatcher
+        });
+
     }
 
     override function onkeydown(e:KeyEvent) {
+        if (boneList.length > 0) {
+            var skeletonRoot = boneList[0];
+
+            if (e.keycode == Key.equals) {
+                curFrame++;
+                skeletonRoot.frameIndex = curFrame;
+            }
+            else  if (e.keycode == Key.minus) {
+                curFrame--;
+                skeletonRoot.frameIndex = curFrame;
+            }
+
+            curFrame = skeletonRoot.frameIndex; //make sure we don't get a mismatch or go out of bounds
+
+            if (e.keycode == Key.key_a) {
+                skeletonRoot.animate(1);
+            }
+        }
+        
+
         if (e.keycode == Key.key_b) {
             //leave animation mode
             machine.set("draw", main);
         }
     } 
+
+    function selectBone(b : Bone) {
+        if (selectedBone != null) {
+            selectedBone.color = new Color(255,255,255);
+        }
+        selectedBone = b;
+        selectedBone.color = new Color(255,255,0);
+    }
 }
 
 class PlayState extends State {
