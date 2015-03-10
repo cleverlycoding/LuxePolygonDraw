@@ -16,11 +16,11 @@ import snow.types.Types;
 
 //HAXE
 //IOS hack
-/*
+
 import sys.io.File;
 import sys.io.FileOutput;
 import sys.io.FileInput;
-*/
+
 
 //ARL
 /*
@@ -31,6 +31,7 @@ import Slider;
 import Edit;
 import LayerManager;
 */
+import animation.Bone;
 
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
@@ -98,10 +99,12 @@ class Main extends luxe.Game {
         machine.add(new DrawState({name:"draw"}));
         machine.add(new PickColorState({name:"pickcolor"}));
         machine.add(new EditState({name:"edit"}));
+        machine.add(new AnimationState({name:"animation"}));
         machine.add(new PlayState({name:"play"}));
         machine.set("draw", this);
 
         //HACK TO LOAD TEST LEVEL IMMEDIATELY
+        /*
         Luxe.loadJSON("assets/prototype5.json", function(j) {
             var inObj = j.json;
 
@@ -117,6 +120,7 @@ class Main extends luxe.Game {
                 machine.set("play", this);
             });
         });
+        */
     } //ready
 
     override function onkeydown(e:KeyEvent) {
@@ -411,7 +415,7 @@ class Main extends luxe.Game {
     public function saveLoadInput(e:KeyEvent) {
 
         //HACK for ios
-        /*
+        
         if (e.keycode == Key.key_1) {
             //save
             var rawSaveFileName = Luxe.core.app.io.platform.dialog_save().split(".");
@@ -473,7 +477,7 @@ class Main extends luxe.Game {
 
             input.close();
         }
-        */
+        
     }
 
     public function zoomInput(e:KeyEvent) {
@@ -778,7 +782,7 @@ class Main extends luxe.Game {
 
     public function addSelectedLayerToComponentManagerInput(e : KeyEvent) {
         //HACK IOS
-        /*
+        
         if (e.keycode == Key.key_c) {
             //load
             var rawOpenFileName = Luxe.core.app.io.platform.dialog_open( "Load Component", [{extension:"hx"}] ).split(".");
@@ -787,7 +791,7 @@ class Main extends luxe.Game {
             var className = fileNameSplit[fileNameSplit.length-1];
             componentManager.addComponent(curPoly(), className);
         }
-        */
+        
     }
 } //Main
 
@@ -841,6 +845,10 @@ class DrawState extends State {
 
         if (e.keycode == Key.key_0) {
             machine.set("play", main);
+        }
+
+        if (e.keycode == Key.key_b) {
+            machine.set("animation", main);
         }
     }
 
@@ -986,6 +994,86 @@ class PickColorState extends State {
         }
     }
 }  
+
+class AnimationState extends State {
+    var main : Main;
+
+    //bones
+    var boneList : Array<Bone> = [];
+
+    //making a new bone
+    var startPos : Vector;
+    var endPos : Vector;
+
+    var selectedBone : Bone;
+
+    override function init() {
+    } //init
+
+    override function onenter<T>( _main:T ) {
+        main = cast(_main, Main);
+        Bone.SkeletonBatcher = main.uiBatcher;
+    } //onenter
+
+    override function onleave<T>( _main:T ) {
+    } //onleave
+
+    override function onmousedown(e:MouseEvent) {
+        startPos = Luxe.camera.screen_point_to_world(e.pos);
+        endPos = startPos.clone();
+    }
+
+    override function onmousemove(e:MouseEvent) {
+        if (Luxe.input.mousedown(1)) {
+            endPos = Luxe.camera.screen_point_to_world(e.pos);
+        }
+    }
+
+    override function onmouseup(e:MouseEvent) {
+       
+        if (selectedBone != null) {
+            var b = new Bone({pos : startPos.toLocalSpace(selectedBone.transform), parent : selectedBone}, startPos.distance(endPos));
+            b.rotation_z = selectedBone.transform.worldRotationToLocalRotationZ( Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90 );
+            
+            boneList.push(b);
+            selectedBone = b;
+        }
+        else {
+            var b = new Bone({pos : startPos}, startPos.distance(endPos));
+            b.rotation_z = Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90;
+
+            boneList.push(b);
+            selectedBone = b;
+        }
+        
+    }
+
+    override function update(dt:Float) {
+
+        for (b in boneList) {
+            //b.rotation_z += b.testRot * dt;
+        }
+
+        if (selectedBone != null) selectedBone.drawEditHandles();
+
+        if (Luxe.input.mousedown(1)) {
+            Luxe.draw.line({
+                p0 : startPos,
+                p1 : endPos,
+                color : new Color(255,255,0),
+                immediate : true,
+                batcher : main.uiBatcher
+            });
+        }
+    }
+
+    override function onkeydown(e:KeyEvent) {
+        if (e.keycode == Key.key_b) {
+            //leave animation mode
+            machine.set("draw", main);
+        }
+    } 
+}
 
 class PlayState extends State {
 

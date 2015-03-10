@@ -4,6 +4,7 @@ import luxe.Vector;
 import luxe.Transform;
 import luxe.Matrix;
 import luxe.Quaternion;
+import luxe.Visual;
 import luxe.utils.Maths;
 import luxe.collision.shapes.Polygon in PolygonCollisionShape;
 
@@ -32,11 +33,27 @@ class VectorExtender {
 	}
 
 	static public function toWorldSpace(v:Vector, t:Transform) : Vector {
-		var worldV : Vector;	
+		/*
+		var worldV : Vector;
+		worldV = v.clone().transform(t.world.matrix);
+		worldV.subtract(t.origin);
+		*/
+
+		//var worldV : Vector;
+		//worldV = v.clone().add(t.origin);
+		
+		var worldV : Vector;
 		worldV = v.clone().transform(t.world.matrix);
 		if (t.parent != null) {
-			worldV = toWorldSpace(v, t.parent);
+			worldV = worldV.toWorldSpace(t.parent);
 		}
+		
+		/*
+		if (t.parent != null) {
+			worldV = toWorldSpace(worldV, t.parent);
+		}
+		*/
+		
 		return worldV;
 	}
 
@@ -58,12 +75,26 @@ class TransformExtender {
 	static public function up(t:Transform) {
 		var upV = new Vector(0.0, 1.0);
 		upV.applyQuaternion(t.rotation);
+		
+		var parent = t.parent;
+		while (parent != null) {
+			upV.applyQuaternion(parent.rotation);
+			parent = parent.parent;
+		}
+
 		return upV;
 	}
 
 	static public function right(t:Transform) {
 		var rightV = new Vector(1.0, 0.0);
 		rightV.applyQuaternion(t.rotation);
+
+		var parent = t.parent;
+		while (parent != null) {
+			rightV.applyQuaternion(parent.rotation);
+			parent = parent.parent;
+		}
+
 		return rightV;
 	}
 
@@ -75,6 +106,32 @@ class TransformExtender {
 	static public function rotateY(t:Transform, a:Float) { //rotates "inward"
         var rot = ( new Quaternion() ).setFromAxisAngle( new Vector(0,1,0), a );
         t.rotation.multiply(rot);
+	}
+
+	static public function setRotationZ(t:Transform, degrees:Float) {
+		var rot = ( new Quaternion() ).setFromAxisAngle( new Vector(0,0,1), Maths.radians(degrees) );
+		t.rotation = rot;
+	}
+
+	/*
+	static public function convertToLocalScale(t:Transform, scale:Vector) : Vector {
+		var localScale = scale.clone().divide(t.scale);
+		var parent = t.parent;
+		while (parent != null) {
+			localScale.divide(parent.scale);
+			parent = parent.parent;
+		}
+		return localScale;
+	}
+	*/
+
+	static public function worldRotationToLocalRotationZ(t:Transform, rotation_z:Float) : Float {
+		var euler = new Vector().setEulerFromQuaternion(t.rotation);
+		rotation_z -= Maths.degrees(euler.z);
+		if (t.parent != null) {
+			rotation_z = t.parent.worldRotationToLocalRotationZ(rotation_z);
+		}
+		return rotation_z;
 	}
 }
 
