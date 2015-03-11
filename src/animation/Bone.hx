@@ -35,7 +35,11 @@ class Bone extends Visual {
 	var isAnimating : Bool;
 	
 	override public function new(_options : luxe.options.VisualOptions, length : Float, rotation_z : Float) {
+		_options.name = "Bone";
+		_options.name_unique = true;
 		super(_options);
+
+		trace(this.name);
 
 		this.length = length;
 		this.rotation_z = rotation_z;
@@ -169,7 +173,7 @@ class Bone extends Visual {
 	}
 
 	override function set_rotation_z( _degrees:Float ) : Float {
-		super.set_rotation_z(_degrees);
+		super.set_rotation_z(Maths.wrap_angle(_degrees, 0, 360)); //keep rotations b/w 0 and 360 degrees
 
 		if (frames.length > 0 && !isAnimating) frames[frameIndex].rotation_z = rotation_z;
 
@@ -196,15 +200,51 @@ class Bone extends Visual {
 
 		if (nextFrame < frames.length) {
 
-			Actuate.tween(this, timeBetweenFrames, {rotation_z: frames[nextFrame].rotation_z})
+			//wrap target rotation so that the bone always rotates the correct direction, taking the shortest path
+			var endRotZ = Maths.wrap_angle(frames[nextFrame].rotation_z, rotation_z - 180, rotation_z + 180);
+
+			Actuate.tween(this, timeBetweenFrames, {rotation_z: endRotZ}, true, LinearActuator)
 				.onComplete(function() {
 					frameIndex = nextFrame;
 					tweenToNextFrame(timeBetweenFrames);
 				});
+
 		}
 		else {
 			trace("done animating!");
 			isAnimating = false;
 		}
+	}
+
+	//get this bone and ALL sub-bones (breadth first search)
+	public function skeleton() : Array<Bone> {
+		var skel : Array<Bone> = [];
+		var skelSearch : Array<Bone> = [this];
+
+		while (skelSearch.length > 0) {
+			var bone = skelSearch[0];
+
+			for (c in bone.children) {
+				if (Std.is(c, Bone)) {
+                    skelSearch.push(cast c);
+                }
+			}
+
+			skelSearch.remove(bone);
+			skel.push(bone);
+		}
+
+		return skel;
+	}
+
+	public function closestWorldPoint(otherPoint : Vector) : Vector {
+		var a = worldPos();
+		var b = worldPos().clone().add(transform.up().multiplyScalar(length));
+
+		return otherPoint.closestPointOnLine( a, b );
+	}
+
+	public function endPos() : Vector {
+		return worldPos().clone().add(transform.up().multiplyScalar(length));
 	}
 }

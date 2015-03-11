@@ -14,6 +14,7 @@ import luxe.collision.shapes.Circle in CollisionCircle;
 import luxe.collision.shapes.Polygon in CollisionPoly;
 import luxe.utils.Maths;
 import snow.types.Types;
+import luxe.Entity;
 
 //HAXE
 //IOS hack
@@ -33,6 +34,7 @@ import Edit;
 import LayerManager;
 */
 import animation.Bone;
+import components.Animation;
 
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
@@ -79,6 +81,9 @@ class Main extends luxe.Game {
     //camera and zoom
     var refSize = new Vector(960, 640);
 
+    //animation
+    public var boneBatcher : Batcher;
+
     override function ready() {
         trace(Luxe.screen.size);
         trace(Luxe.camera.center);
@@ -93,7 +98,8 @@ class Main extends luxe.Game {
         Luxe.renderer.state.lineWidth(2);
 
         //UI
-        createUI();  
+        createUI();
+        boneBatcher = Luxe.renderer.create_batcher({name:"boneBatcher", layer:2, camera:Luxe.camera.view});  
 
         //STATES
         machine = new States({name:"statemachine"});
@@ -174,7 +180,7 @@ class Main extends luxe.Game {
 
     function createUI () {
         //separate batcher to layer UI over drawing space
-        uiBatcher = Luxe.renderer.create_batcher({name:"uiBatcher", layer:2});
+        uiBatcher = Luxe.renderer.create_batcher({name:"uiBatcher", layer:10});
 
         //UI
         picker = new ColorPicker({
@@ -769,7 +775,7 @@ class Main extends luxe.Game {
         return false;
     }
 
-    function curPoly() : Polygon {
+    public function curPoly() : Polygon {
         return cast(layers.getLayer(curLayer), Polygon);
     }
 
@@ -1000,7 +1006,7 @@ class AnimationState extends State {
     var main : Main;
 
     //bones
-    var boneList : Array<Bone> = [];
+    var boneArray : Array<Bone> = [];
     var selectedBone : Bone;
 
     //making a new bone
@@ -1017,6 +1023,18 @@ class AnimationState extends State {
     //
     var curFrame : Int = 0;
 
+    function updateBoneArray() {
+        boneArray = [];
+
+        var rootBones : Array<Entity> = [];
+        Luxe.scene.get_named_like("Bone.*", rootBones); //find root bones
+
+        for (b in rootBones) {
+            var root = cast b;
+            boneArray = boneArray.concat(root.skeleton());
+        }
+    }
+
     override function init() {
     } //init
 
@@ -1028,6 +1046,8 @@ class AnimationState extends State {
     } //onleave
 
     override function onmousedown(e:MouseEvent) {
+        updateBoneArray();
+
         var worldMousePos = Luxe.camera.screen_point_to_world(e.pos);
         var mouseCollisionShape = new CollisionCircle(worldMousePos.x, worldMousePos.y, 10);
 
@@ -1040,7 +1060,8 @@ class AnimationState extends State {
         if (!isRotatingBone) {
 
             isMakingBone = true;
-            for (b in boneList) {
+            for (b in boneArray) {
+                //var bone = cast(b, Bone); //cast to bone
                 if (Collision.test(mouseCollisionShape, b.collisionShape()) != null) {
                     selectBone(b);
                     isMakingBone = false;
@@ -1077,28 +1098,28 @@ class AnimationState extends State {
        
        if (isMakingBone) {
             if (selectedBone != null) {
+
                 var b = new Bone({
                         pos : startPos.toLocalSpace(selectedBone.transform), 
                         parent : selectedBone,
-                        batcher : main.uiBatcher
+                        batcher : main.boneBatcher
                     }, 
                     startPos.distance(endPos),
                     selectedBone.transform.worldRotationToLocalRotationZ( Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90 )
                 );
                 
-                boneList.push(b);
                 selectBone(b);
             }
             else {
+
                 var b = new Bone({
                         pos : startPos, 
-                        batcher : main.uiBatcher
+                        batcher : main.boneBatcher
                     }, 
                     startPos.distance(endPos), 
                     Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90
                 );
 
-                boneList.push(b);
                 selectBone(b);
             }
         }
@@ -1108,6 +1129,7 @@ class AnimationState extends State {
     }
 
     override function update(dt:Float) {
+        updateBoneArray();
 
         if (selectedBone != null) selectedBone.drawEditHandles();
 
@@ -1133,8 +1155,8 @@ class AnimationState extends State {
     }
 
     override function onkeydown(e:KeyEvent) {
-        if (boneList.length > 0) {
-            var skeletonRoot = boneList[0];
+        if (boneArray.length > 0) {
+            var skeletonRoot = boneArray[0];
 
             if (e.keycode == Key.equals) {
                 curFrame++;
@@ -1151,7 +1173,36 @@ class AnimationState extends State {
                 skeletonRoot.animate(1);
             }
         }
+
+        if (selectedBone != null) {
+            if (e.keycode == Key.key_p) { //delete selected bone
+
+                var tmp = selectedBone;
+
+                //find new bone to select if possible
+                if (selectedBone.parent != null) {
+                    selectBone(cast selectedBone.parent);
+                }
+                else {
+                    selectedBone = null;
+                }
+                
+                tmp.destroy(); 
+            }
+        }
         
+
+        if (e.keycode == Key.key_i) {
+            Luxe.renderer.remove_batch(main.boneBatcher);
+        }
+        else if (e.keycode == Key.key_u) {
+            Luxe.renderer.add_batch(main.boneBatcher);
+        }
+
+        if (e.keycode == Key.key_g) { //attach skeleton to poly
+            main.curPoly().add(new Animation({name: "Animation"}));
+            cast(main.curPoly().get("Animation"), Animation).skeletonRoot = boneArray[0];
+        }
 
         if (e.keycode == Key.key_b) {
             //leave animation mode

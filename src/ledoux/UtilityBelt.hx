@@ -47,6 +47,15 @@ class VectorExtender {
 	static public function tangent2D(v:Vector) : Vector {
 		return new Vector(-v.y, v.x);
 	}
+
+	static public function closestPointOnLine(v:Vector, a:Vector, b:Vector) : Vector {
+		var ab = Vector.Subtract(b, a);
+		var av = Vector.Subtract(v, a);
+
+		var d = Maths.clamp(av.dot(ab), 0, ab.length);
+
+		return Vector.Add( a, Vector.Multiply(ab.normalized, d) );
+	}
 }
 
 class TransformExtender {
@@ -111,6 +120,14 @@ class TransformExtender {
 		}
 		return rotation_z;
 	}
+
+	static public function worldVectorToLocalSpace(t:Transform, v:Vector) : Vector {
+		return v.toLocalSpace(t);
+	}
+
+	static public function localVectorToWorldSpace(t:Transform, v:Vector) : Vector {
+		return v.toWorldSpace(t);
+	}
 }
 
 class PolylineExtender {
@@ -124,8 +141,28 @@ class PolylineExtender {
 		return closestIndex;
 	}
 
-	static public function closestPoint(points:Array<Vector>, otherPoint:Vector) : Vector {
+	static public function closestVertex(points:Array<Vector>, otherPoint:Vector) : Vector {
 		return points[points.closestIndex(otherPoint)];
+	}
+
+	static public function closestPoint(points:Array<Vector>, otherPoint:Vector) : Vector {
+
+		var closestPoint = points[0].clone();
+
+		for (i in 0 ... points.length - 1) {
+
+			var a = points[i];
+			var b = points[i+1];
+
+			var p = otherPoint.closestPointOnLine( a, b );
+
+			if ( otherPoint.distance(p) < otherPoint.distance(closestPoint) ) {
+				closestPoint = p;
+			}
+		}
+
+		return closestPoint;
+
 	}
 
 	static public function clone(points:Array<Vector>) : Array<Vector> {
