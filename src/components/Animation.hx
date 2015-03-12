@@ -9,10 +9,19 @@ import animation.Bone;
 using ledoux.UtilityBelt.TransformExtender;
 using ledoux.UtilityBelt.VectorExtender;
 
+/*
 typedef VertexBoneMapping = {
 	public var vertexIndex : Int;
 	public var boneIndex : Int;
 	public var localPos : Vector;
+}
+*/
+
+typedef VertexBoneMapping = {
+	public var vertex : Int;
+	public var bones : Array<Int>;
+	public var weights : Array<Float>;
+	public var displacements : Array<Vector>;
 }
 
 class Animation extends EditorComponent {
@@ -24,53 +33,40 @@ class Animation extends EditorComponent {
 
 	var skeletonMap : Array<VertexBoneMapping>;
 
+	public var maxInfluenceDistance : Float = 0; //distance within which vertices are influenced by bones
+
 	override function init() {
 		polygon = cast entity;
 	}
 
 	override function update(dt : Float) {
-		//I bet this is WILDLY inefficient
 		for (mapping in skeletonMap) {
 
+			/*
 			var bone = skeleton[mapping.boneIndex];
+			
 			var worldPos = bone.transform.localVectorToWorldSpace(mapping.localPos);
 			var vertPos = polygon.transform.worldVectorToLocalSpace(worldPos);
 
 			polygon.geometry.vertices[mapping.vertexIndex].pos = vertPos;
-
-			/*
-			var bone = skeleton[mapping.boneIndex];
-			var localDisplacement = bone.transform.worldVectorToLocalSpace(mapping.worldDisplacement);
-
-
-			var localPos = bone.pos.clone().add(localDisplacement);
-			var worldPos = bone.transform.localVectorToWorldSpace(localPos);
-			var polyLocalPos = polygon.transform.worldVectorToLocalSpace(worldPos);
-			polygon.geometry.vertices[mapping.vertexIndex].pos = polyLocalPos;
-
-
-			//debug!!
-			Luxe.draw.circle({
-				r : 5,
-				x : localPos.x, y : localPos.y,
-				color : new Color(255,0,0),
-				immediate : true
-			});
-
-			Luxe.draw.circle({
-				r : 5,
-				x : worldPos.x, y : worldPos.y,
-				color : new Color(0,255,0),
-				immediate : true
-			});
-
-			Luxe.draw.circle({
-				r : 5,
-				x : polyLocalPos.x, y : polyLocalPos.y,
-				color : new Color(0,0,255),
-				immediate : true
-			});
 			*/
+
+			var weightedVertPos = new Vector(0,0);
+
+			for (i in 0 ... mapping.bones.length) {
+
+				var bone = skeleton[mapping.bones[i]];
+				var weight = mapping.weights[i];
+
+				var worldPos = bone.transform.localVectorToWorldSpace(mapping.displacements[i]);
+				var vertPos = polygon.transform.worldVectorToLocalSpace(worldPos);
+
+				weightedVertPos.add(vertPos.multiplyScalar(weight));
+
+			}
+
+			polygon.geometry.vertices[mapping.vertex].pos = weightedVertPos;
+
 		}
 	}
 
@@ -78,12 +74,12 @@ class Animation extends EditorComponent {
 		skeletonRoot = root;
 
 		skeleton = root.skeleton();
-		makeMeshToSkeletonMapping();
+		mapMeshToSkeleton();
 
 		return skeletonRoot;
 	}
 
-	function makeMeshToSkeletonMapping() {
+	function mapMeshToSkeleton() {
 
 		skeletonMap = [];
 
@@ -96,6 +92,9 @@ class Animation extends EditorComponent {
 			var closestBone = 0;
 			var closestDist = skeleton[closestBone].closestWorldPoint(vertWorldPos).distance(vertWorldPos);
 
+			var closeBones = [];
+			var closeDistList = [];
+
 			var j = 0;
 			for (bone in skeleton) {
 
@@ -106,24 +105,69 @@ class Animation extends EditorComponent {
 					closestDist = curDist;
 				}
 
+				if (curDist < maxInfluenceDistance) {
+					closeBones.push(j);
+					closeDistList.push(curDist);
+				}
+
 				j++;
 			}
 
-			//calc displacement in the world coords
-			/*
-			var boneWorldPos = skeleton[closestBone].worldPos();
-			var disp = Vector.Subtract(boneWorldPos, vertWorldPos);
-			*/
+			//in case no bones are closer than maxInfluenceDistance
+			if (closeBones.length == 0) {
+				closeBones.push(closestBone);
+				closeDistList.push(closestDist);
+			}
 
+			//calc weights
+			var totalDist = 0.0;
+			for (d in closeDistList) {
+				totalDist += d;
+			}
+			var weights = closeDistList.map(function(d) { return (1.0 - (d / totalDist)); });
+
+			//inelegant hack
+			if (weights.length == 1) weights = [1.0];
+
+			//another inelegant hack ( for renormalization )
+			var totalWeight = 0.0;
+			for (w in weights) {
+				totalWeight += w;
+			}
+			weights = weights.map(function(w) { return w / totalWeight; });
+
+			
+
+			//calc displacements
+			var displacements = closeBones.map(function(b) { return skeleton[b].transform.worldVectorToLocalSpace(vertWorldPos); });
+
+			//create mapping
+			var mapping = {
+				vertex : i,
+				bones : closeBones,
+				weights : weights,
+				displacements : displacements
+			};
+			skeletonMap.push(mapping);
+
+			/*
 			var posRelToBone = skeleton[closestBone].transform.worldVectorToLocalSpace(vertWorldPos);
 
 			//create mapping
 			var mapping = {vertexIndex : i, boneIndex : closestBone, localPos : posRelToBone};
 			skeletonMap.push(mapping);
+			*/
 
 			i++;
 		}
 
-		trace(skeletonMap);
+		//trace(skeletonMap);
+
+		for (m in skeletonMap) {
+			trace(m.weights);
+			trace(m.bones);
+			trace("---");
+		}
+
 	}
 }

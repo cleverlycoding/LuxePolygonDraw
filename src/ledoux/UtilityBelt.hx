@@ -193,6 +193,7 @@ class PolylineExtender {
 		return points.clone().map( function(p) { return p.toWorldSpace(t); } );
 	}
 
+	//what is this doing in polyline extender?
 	static public function testLineIntersection(a:Vector, b:Vector, c:Vector, d:Vector) {
 		var p = a;
 		var q = c;
