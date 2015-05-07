@@ -13,6 +13,43 @@ using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.TransformExtender;
 using ledoux.UtilityBelt.PolylineExtender;
 
+import sys.io.File;
+import sys.io.FileOutput;
+import sys.io.FileInput;
+
+class PolygonGroupExtender {
+	static public function center(pGroup:Array<Polygon>) : Vector {
+		var center = new Vector(0,0);
+
+		for (poly in pGroup) {
+			center.add( poly.transform.pos );
+		}
+
+		center.divideScalar( pGroup.length );
+
+		return center;
+	}
+}
+
+class FileInputExtender {
+	static public function readScene(input:FileInput) : Array<Polygon> {
+		var polygonList : Array<Polygon> = [];
+
+		var inStr = "";
+        while (!input.eof()) {
+            inStr += input.readLine();
+        }
+
+        var inObj = haxe.Json.parse(inStr);
+
+        for (l in cast(inObj.layers, Array<Dynamic>)) {
+        	polygonList.push( new Polygon({}, [], l) );
+        }
+
+        return polygonList;
+	}
+}
+
 class VectorExtender {
 	static public function distance(pos1:Vector, pos2:Vector) : Float {
 		return Vector.Subtract(pos1, pos2).length;
@@ -52,7 +89,7 @@ class VectorExtender {
 		var ab = Vector.Subtract(b, a);
 		var av = Vector.Subtract(v, a);
 
-		var d = Maths.clamp(av.dot(ab), 0, ab.length);
+		var d = Maths.clamp(av.dot(ab.normalized), 0.0, ab.length);
 
 		return Vector.Add( a, Vector.Multiply(ab.normalized, d) );
 	}
@@ -261,7 +298,7 @@ class PolylineExtender {
 		for (p in points) {
 			center.add(p);
 		}
-		center.divideScalar(points.length);
+		if (points.length > 0) center.divideScalar(points.length);
 		return center;
 	}
 

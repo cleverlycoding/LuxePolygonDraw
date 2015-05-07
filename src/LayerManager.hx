@@ -1,7 +1,7 @@
 import luxe.Visual;
 
 class LayerManager {
-	var layers:Array<Visual>;
+	public var layers:Array<Visual>;
 	var baseDepth:Float;
 	var depthIncrement:Float;
 	var maxLayerNum:Int;
@@ -47,7 +47,7 @@ class LayerManager {
 	}
 
 	function setLayerDepth(l:Visual, i:Int) {
-		l.geometry.depth = baseDepth + (depthIncrement * i);
+		l.depth = baseDepth + (depthIncrement * i);
 	}
 
 	public function getNumLayers(): Int {

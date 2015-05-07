@@ -22,6 +22,9 @@ class Polygon extends Visual {
 
 		this.points = points;
 
+		//LISTENERS ( TODO - still not working D: )
+		pos.listen_x = listen_x;
+
 		recenter();
 
 		if (jsonObj != null) {
@@ -43,6 +46,11 @@ class Polygon extends Visual {
 			for (jp in cast(jsonObj.points, Array<Dynamic>)) {
 				this.points.push(new Vector(jp.x, jp.y));
 			}
+
+			for (jc in cast(jsonObj.children, Array<Dynamic>)) {
+				this.children.push(new Polygon({}, [], jc));
+			}
+
 		}
 
 		geometry = new Geometry({
@@ -61,27 +69,29 @@ class Polygon extends Visual {
 			batcher: Luxe.renderer.batcher
 		});
 
-		var p2t = new org.poly2tri.VisiblePolygon();
-		p2t.addPolyline(convertVectorsToPoly2TriPoints(points));
-		p2t.performTriangulationOnce();
+		if (points.length > 0) {
+			var p2t = new org.poly2tri.VisiblePolygon();
+			p2t.addPolyline(convertVectorsToPoly2TriPoints(points));
+			p2t.performTriangulationOnce();
 
-		var results = p2t.getVerticesAndTriangles();
-		
-		var i = 0;
-		while (i < results.triangles.length) {
-			for (j in i ... (i+3)) {
-				var vIndex = results.triangles[j] * 3;
+			var results = p2t.getVerticesAndTriangles();
+			
+			var i = 0;
+			while (i < results.triangles.length) {
+				for (j in i ... (i+3)) {
+					var vIndex = results.triangles[j] * 3;
 
-				var x = results.vertices[vIndex + 0];
-				var y = results.vertices[vIndex + 1];
-				var z = results.vertices[vIndex + 2];
+					var x = results.vertices[vIndex + 0];
+					var y = results.vertices[vIndex + 1];
+					var z = results.vertices[vIndex + 2];
 
-				var vertex = new Vertex(new Vector(x, y, z), color);
+					var vertex = new Vertex(new Vector(x, y, z), color);
 
-				geometry.add(vertex);
+					geometry.add(vertex);
+				}
+
+				i += 3;
 			}
-
-			i += 3;
 		}
 	}
 
@@ -132,8 +142,17 @@ class Polygon extends Visual {
 		generateMesh(); //regenerate mesh whenever you change the number of points
 	}
 
+	//REPLACE THIS WITH set_points ???
 	public function getPoints(): Array<Vector> {
-		return points.toWorldSpace(transform);
+		//NOW INCLUDING ALL POINTS FROM CHILDREN - WHAT COULD GO WRONG????
+		var worldPoints = [];
+		worldPoints = worldPoints.concat(points.toWorldSpace(transform));
+		
+		for (child in children) {
+			worldPoints = worldPoints.concat( cast(child, Polygon).getPoints() );
+		}
+		
+		return worldPoints;
 	}
 
 	public function addPoint(p:Vector) {
@@ -162,7 +181,13 @@ class Polygon extends Visual {
 
 		var jsonColor = {r: color.r, g: color.g, b: color.b, a: color.a};
 
-		return {name: jsonName, pos: jsonPos, scale: jsonScale, rotation: jsonRotation, color: jsonColor, points: jsonPoints};
+		var jsonChildren : Array<Dynamic> = [];
+		for (child in children) {
+			jsonChildren.push( cast(child, Polygon).jsonRepresentation() );
+		}
+
+		return {name: jsonName, pos: jsonPos, scale: jsonScale, rotation: jsonRotation, 
+			color: jsonColor, points: jsonPoints, children: jsonChildren};
 	}
 
 	function recenter() {
@@ -174,5 +199,32 @@ class Polygon extends Visual {
 	public function collisionBounds() : CollisionPoly {
 		var worldPoints = getPoints().map( function(p) { return p.subtract(pos); } );
 		return worldPoints.collisionShape(transform.pos);
+	}
+
+	//group depth
+	override function set_depth(depth : Float) : Float {
+		trace(depth);
+
+		if(geometry != null) {
+            geometry.depth = depth;
+        } //geometry
+
+		for (child in children) {
+			cast(child, Visual).depth = depth;
+		}
+		return depth;
+	}
+
+	/*
+	override function set_pos(pos : Vector) : Vector {
+		//super.set_pos(pos);
+		trace("set_pos");
+		return pos;
+		Vector.Listen()
+	}
+	*/
+
+	function listen_x(change : Float) : Void {
+		trace("pos change " + change);
 	}
 }

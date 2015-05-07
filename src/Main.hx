@@ -8,10 +8,12 @@ import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher;
 import luxe.States;
+
 import luxe.collision.Collision;
 import luxe.collision.ShapeDrawerLuxe;
 import luxe.collision.shapes.Circle in CollisionCircle;
 import luxe.collision.shapes.Polygon in CollisionPoly;
+
 import luxe.utils.Maths;
 import snow.types.Types;
 import luxe.Entity;
@@ -35,10 +37,12 @@ import LayerManager;
 */
 import animation.Bone;
 import components.Animation;
+import components.PuppetAnimation;
 
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
 using ledoux.UtilityBelt.TransformExtender;
+using ledoux.UtilityBelt.FileInputExtender;
 
 class Main extends luxe.Game {
 
@@ -48,7 +52,7 @@ class Main extends luxe.Game {
 	public var isDrawing : Bool;
 
 	//layers
-	var layers = new LayerManager(0, 1, 1000);
+	public var layers = new LayerManager(0, 1, 1000);
 	var aboveLayersDepth = 10001;
 	var curLayer = 0;
 	public var selectedLayerOutline : Polyline;
@@ -108,6 +112,7 @@ class Main extends luxe.Game {
         machine.add(new EditState({name:"edit"}));
         machine.add(new AnimationState({name:"animation"}));
         machine.add(new PlayState({name:"play"}));
+        machine.add(new GroupState({name:"group"}));
         machine.set("draw", this);
 
         //HACK TO LOAD TEST LEVEL IMMEDIATELY
@@ -128,6 +133,9 @@ class Main extends luxe.Game {
             });
         });
         */
+
+       // new IconButton({}, "/Users/adamrossledoux/Code/Haxe/LuxePolygonDraw/levels/floppy_icon.json");
+
     } //ready
 
     override function onkeydown(e:KeyEvent) {
@@ -297,7 +305,8 @@ class Main extends luxe.Game {
 
         var drag = Vector.Subtract(mousePos, dragMouseStartPos);
         
-        poly.transform.pos.add(drag);
+        //poly.transform.pos.add(drag);
+        poly.pos.add(drag);
 
         dragMouseStartPos = mousePos;
 
@@ -450,6 +459,8 @@ class Main extends luxe.Game {
             //load
             var rawOpenFileName = Luxe.core.app.io.platform.dialog_open().split(".");
             var openFileName = rawOpenFileName[0];
+
+            trace("file " + openFileName);
 
             //scene file
             var input = File.read(openFileName + ".json", false);
@@ -856,6 +867,10 @@ class DrawState extends State {
         if (e.keycode == Key.key_b) {
             machine.set("animation", main);
         }
+
+        if (e.keycode == Key.key_g) {
+            machine.set("group", main);
+        }
     }
 
     override function onmousedown(e:MouseEvent) {
@@ -1154,6 +1169,9 @@ class AnimationState extends State {
     }
 
     override function onkeydown(e:KeyEvent) {
+
+        main.selectLayerInput(e);
+
         if (boneArray.length > 0) {
             var skeletonRoot = boneArray[0];
 
@@ -1203,6 +1221,11 @@ class AnimationState extends State {
             cast(main.curPoly().get("Animation"), Animation).skeletonRoot = boneArray[0];
         }
 
+        if (e.keycode == Key.key_h) { //attach selected bone to selected poly (1:1)
+            main.curPoly().add(new PuppetAnimation({name: "PuppetAnimation"}));
+            cast(main.curPoly().get("PuppetAnimation"), PuppetAnimation).bone = selectedBone;
+        }
+
         if (e.keycode == Key.key_b) {
             //leave animation mode
             machine.set("draw", main);
@@ -1249,3 +1272,88 @@ class PlayState extends State {
         }
     }    
 } 
+
+
+class GroupState extends State {
+    var startGroupPos = new Vector(0,0);
+    var endGroupPos = new Vector(0,0);
+    var isGrouping = false;
+
+    var main : Main;
+
+    override function init() {
+    } //init
+
+    override function onleave<T>( _main:T ) {
+    } //onleave
+
+    override function onenter<T>( _main:T ) {
+        main = cast(_main, Main);
+    } //onenter
+
+    override function update(dt:Float) {
+        Luxe.draw.rectangle({
+            x : startGroupPos.x,
+            y : startGroupPos.y,
+            w : endGroupPos.x - startGroupPos.x,
+            h : endGroupPos.y - startGroupPos.y,
+            depth: 1000,
+            immediate : true,
+            color : new Color(255, 255, 0)
+        });
+    }
+
+    override function onkeydown(e:KeyEvent) {
+        if (e.keycode == Key.key_g) {
+            machine.set("draw", main);
+        }
+
+        if (e.keycode == Key.key_t) {
+            var polysInGroup = [];
+
+            var groupCollisionArea = new CollisionPoly(0, 0, 
+                [
+                    startGroupPos, 
+                    new Vector(endGroupPos.x, startGroupPos.y),
+                    endGroupPos,
+                    new Vector(startGroupPos.x, endGroupPos.y)
+                ]
+            );
+
+            for (v in main.layers.layers) {
+                var poly = cast(v, Polygon);
+                if (Collision.test(groupCollisionArea, poly.collisionBounds()) != null) {
+                    trace(poly.name);
+                    polysInGroup.push(poly);
+                }
+            }
+
+            trace(polysInGroup);
+
+            if (polysInGroup.length > 0) {
+                var parentPoly = new Polygon({}, []);
+
+                for (childPoly in polysInGroup) {
+                    main.layers.removeLayer(childPoly);
+                    childPoly.parent = parentPoly;
+                }
+
+                main.layers.addLayer(parentPoly);
+            }
+        }
+    }
+
+    override function onmousedown(e:MouseEvent) {
+        startGroupPos = Vector.Add( Luxe.camera.pos, e.pos );
+        endGroupPos = startGroupPos.clone();
+        isGrouping = true;
+    }
+
+    override function onmousemove(e:MouseEvent) {
+        if (isGrouping) endGroupPos = Vector.Add( Luxe.camera.pos, e.pos );
+    }
+
+    override function onmouseup(e:MouseEvent) {
+        isGrouping = false;
+    }
+}
