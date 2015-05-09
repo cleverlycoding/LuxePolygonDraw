@@ -543,7 +543,7 @@ class Main extends luxe.Game {
     public function drawRotationHandle() {
 
         var p = curPoly();
-        var b = p.getBounds();
+        var b = p.getRectBounds();
         var handlePos = Vector.Subtract( p.transform.pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
 
         Luxe.draw.line({
@@ -568,7 +568,7 @@ class Main extends luxe.Game {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
 
         var p = curPoly();
-        var b = p.getBounds();
+        var b = p.getRectBounds();
         var handlePos = Vector.Subtract( p.transform.pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
 
         if (mousePos.distance(handlePos) < (15 / Luxe.camera.zoom)) {
@@ -591,10 +591,10 @@ class Main extends luxe.Game {
 
     function scaleHandles() {
         var p = curPoly();
-        var b = p.getBounds();
+        var b = p.getRectBounds();
 
-        var upPos = Vector.Add( p.transform.pos, p.transform.up().multiplyScalar(b.h * 0.5 /* * 0.7 */) );
-        var rightPos = Vector.Add( p.transform.pos, p.transform.right().multiplyScalar(b.w * 0.5 /* * 0.7 */) );
+        var upPos = Vector.Add( p.transform.pos, p.transform.up().multiplyScalar(b.h * 0.7 /* * 0.5 */ /* * 0.7 */) );
+        var rightPos = Vector.Add( p.transform.pos, p.transform.right().multiplyScalar(b.w * 0.7 /* * 0.5 */ /* * 0.7 */) );
 
         var handleSize = 10 / Luxe.camera.zoom;
 
@@ -688,8 +688,8 @@ class Main extends luxe.Game {
         }
 
         var scaleDelta = Vector.Multiply(scaleDirLocal, drag.dot(scaleDirWorld));
-        scaleDelta.x = (scaleDelta.x / curPoly().getBounds().w) * curPoly().transform.scale.x * 2;
-        scaleDelta.y = (scaleDelta.y / curPoly().getBounds().h) * curPoly().transform.scale.y * 2;
+        scaleDelta.x = (scaleDelta.x / curPoly().getRectBounds().w) * curPoly().transform.scale.x * 2;
+        scaleDelta.y = (scaleDelta.y / curPoly().getRectBounds().h) * curPoly().transform.scale.y * 2;
 
         curPoly().transform.scale.add(scaleDelta);
 
@@ -1309,8 +1309,11 @@ class GroupState extends State {
         }
 
         if (e.keycode == Key.key_t) {
+
+            //this will contain all the polygons that are being grouped together
             var polysInGroup = [];
 
+            //this represents the space highlighted by the cursor for grouping
             var groupCollisionArea = new CollisionPoly(0, 0, 
                 [
                     startGroupPos, 
@@ -1320,6 +1323,7 @@ class GroupState extends State {
                 ]
             );
 
+            //detect collisions between highlighted area and polygongs
             for (v in main.layers.layers) {
                 var poly = cast(v, Polygon);
                 if (Collision.test(groupCollisionArea, poly.collisionBounds()) != null) {
@@ -1330,13 +1334,25 @@ class GroupState extends State {
 
             trace(polysInGroup);
 
+            //remove polys from layer manager, and add them as children to new parent polygon
+            //var c = new Vector(0,0);
             if (polysInGroup.length > 0) {
                 var parentPoly = new Polygon({}, []);
+
+                /*
+                for (childPoly in polysInGroup) {
+                    c.add(childPoly.pos);
+                }
+                c.divideScalar(polysInGroup.length);
+                parentPoly.pos = c;
+                */
 
                 for (childPoly in polysInGroup) {
                     main.layers.removeLayer(childPoly);
                     childPoly.parent = parentPoly;
                 }
+
+                parentPoly.recenter();
 
                 main.layers.addLayer(parentPoly);
             }

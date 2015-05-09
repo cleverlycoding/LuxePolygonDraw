@@ -109,7 +109,22 @@ class Polygon extends Visual {
 		var yMin = 0.0;
 		var yMax = 0.0;
 
-		for (p in points) {
+		var allPoints = [];
+		allPoints = allPoints.concat( points.clone() );
+		for (child in children) { //ADD ALL THE POINTS ( from children )
+			//trace(cast(child, Polygon).points);
+			allPoints = allPoints.concat( cast(child, Polygon).points.clone() );
+		}
+
+		/*
+		if (children.length > 0) {
+			trace("BOUNDS");
+			trace(allPoints.length);
+			trace(allPoints);
+		}
+		*/
+
+		for (p in allPoints) {
 			xMin = Math.min(xMin, p.x);
 			xMax = Math.max(xMax, p.x);
 			yMin = Math.min(yMin, p.y);
@@ -124,7 +139,7 @@ class Polygon extends Visual {
 		return new Rectangle(x, y, w, h);
 	}
 
-	public function getBounds() : Rectangle {
+	public function getRectBounds() : Rectangle {
 		//probably not the best place to put this
 		bounds = calculateBounds(); //local bounds
 
@@ -190,10 +205,25 @@ class Polygon extends Visual {
 			color: jsonColor, points: jsonPoints, children: jsonChildren};
 	}
 
-	function recenter() {
+	//should this really be public??
+	public function recenter() {
 		var c = points.polylineCenter();
+
+		for (child in children) {
+			c.add( child.pos );
+		}
+		if (children.length > 0) c.divideScalar( children.length ); //this could cause problems if the parent has any points
+		
+
 		transform.pos.add(c);
+
 		points = points.toLocalSpace(transform);
+
+		
+		for (child in children) {
+			var p = cast(child, Polygon);
+			p.pos = p.pos.toLocalSpace(transform);
+		}
 	}
 
 	public function collisionBounds() : CollisionPoly {
