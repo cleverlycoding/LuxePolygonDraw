@@ -17,21 +17,24 @@ class Polygon extends Visual {
 	public var points:Array<Vector>;
 	var bounds:Rectangle;
 
+	//TODO - make new polygon from list of old polygons
 	public override function new(_options:luxe.options.VisualOptions, points:Array<Vector>, ?jsonObj) {
 		super(_options);
 
 		this.points = points;
 
 		//LISTENERS ( TODO - still not working D: )
-		pos.listen_x = listen_x;
+		//pos.listen_x = listen_x;
 
-		recenter();
+		if (_options.scene == null) _options.scene = Luxe.scene;
+		trace("SCENE " + _options.scene);
+
 
 		if (jsonObj != null) {
 			if (jsonObj.name != null) {
-				Luxe.scene.remove(this);
+				_options.scene.remove(this);
 				name = jsonObj.name;
-				Luxe.scene.add(this);
+				_options.scene.add(this);
 			}
 
 			transform.pos = new Vector(jsonObj.pos.x, jsonObj.pos.y);
@@ -48,26 +51,43 @@ class Polygon extends Visual {
 			}
 
 			for (jc in cast(jsonObj.children, Array<Dynamic>)) {
-				this.children.push(new Polygon({}, [], jc));
+				var child = new Polygon({batcher:_options.batcher, depth:_options.depth, parent:this}, [], jc);
 			}
 
 		}
 
+		recenter();
+
+		trace(_options.batcher);
+
+		if (_options.batcher == null) _options.batcher = Luxe.renderer.batcher;
+
 		geometry = new Geometry({
 			primitive_type: PrimitiveType.triangles,
-			batcher: Luxe.renderer.batcher
+			batcher: _options.batcher, //THIS MIGHT FUCK SOME SHIT UP BUT I DON'T CARE
+			depth: _options.depth
 		});
 
 		generateMesh();
+
+		
 	}
 
 	function generateMesh() {
 		//clear geometry (super INEFFICIENT (probably))
-		Luxe.renderer.batcher.remove(geometry); //switch to _options.batcher for better flexibility
+		var curBatcher = geometry.batchers[0]; //get current batcher?
+
+		trace(curBatcher);
+
+		//Luxe.renderer.batcher.remove(geometry); //switch to _options.batcher for better flexibility
+
+		curBatcher.remove(geometry);
 		geometry = new Geometry({
 			primitive_type: PrimitiveType.triangles,
-			batcher: Luxe.renderer.batcher
+			batcher: curBatcher
 		});
+
+		trace("GEOM BATCHER " + geometry.batchers);
 
 		if (points.length > 0) {
 			var p2t = new org.poly2tri.VisiblePolygon();
@@ -112,17 +132,8 @@ class Polygon extends Visual {
 		var allPoints = [];
 		allPoints = allPoints.concat( points.clone() );
 		for (child in children) { //ADD ALL THE POINTS ( from children )
-			//trace(cast(child, Polygon).points);
 			allPoints = allPoints.concat( cast(child, Polygon).points.clone() );
 		}
-
-		/*
-		if (children.length > 0) {
-			trace("BOUNDS");
-			trace(allPoints.length);
-			trace(allPoints);
-		}
-		*/
 
 		for (p in allPoints) {
 			xMin = Math.min(xMin, p.x);
@@ -213,13 +224,11 @@ class Polygon extends Visual {
 			c.add( child.pos );
 		}
 		if (children.length > 0) c.divideScalar( children.length ); //this could cause problems if the parent has any points
-		
 
 		transform.pos.add(c);
 
 		points = points.toLocalSpace(transform);
 
-		
 		for (child in children) {
 			var p = cast(child, Polygon);
 			p.pos = p.pos.toLocalSpace(transform);
@@ -233,7 +242,6 @@ class Polygon extends Visual {
 
 	//group depth
 	override function set_depth(depth : Float) : Float {
-		trace(depth);
 
 		if(geometry != null) {
             geometry.depth = depth;

@@ -1,0 +1,28 @@
+[
+    {
+        "components": [
+            {
+                "componentsToActivate": null,
+                "inactiveColor": null,
+                "buttonGroup": null,
+                "activeColor": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": null,
+                "inactiveColor": null,
+                "buttonGroup": null,
+                "activeColor": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id1"
+    }
+]

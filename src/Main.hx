@@ -17,6 +17,8 @@ import luxe.collision.shapes.Polygon in CollisionPoly;
 import luxe.utils.Maths;
 import snow.types.Types;
 import luxe.Entity;
+import luxe.Camera;
+import luxe.Scene;
 
 //HAXE
 //IOS hack
@@ -43,8 +45,12 @@ using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
 using ledoux.UtilityBelt.TransformExtender;
 using ledoux.UtilityBelt.FileInputExtender;
+import ledoux.UtilityBelt.DynamicExtender;
 
 class Main extends luxe.Game {
+
+    //singleton
+    public static var instance : Main;
 
 	//drawing
 	var curLine : Polyline;
@@ -72,9 +78,12 @@ class Main extends luxe.Game {
 
     //ui
     public var uiBatcher : Batcher;
+    public var uiSceneBatcher : Batcher; //batcher for the JSON scene
+    public var uiSceneCamera : Camera;
+    public var uiScene : Scene;
 
     //states
-    var machine : States;
+    public var machine : States;
 
     //collisions
     var polyCollision : CollisionPoly;
@@ -89,6 +98,8 @@ class Main extends luxe.Game {
     public var boneBatcher : Batcher;
 
     override function ready() {
+        instance = this;
+
         trace(Luxe.screen.size);
         trace(Luxe.camera.center);
         trace(Luxe.screen.mid);
@@ -217,6 +228,27 @@ class Main extends luxe.Game {
 
         //turn off color picker
         colorPickerMode(false);
+
+
+        //// NEW UI FROM JSON
+        uiScene = new Scene("uiScene");
+        uiSceneCamera = new Camera({name:"uiSceneCamera", scene: uiScene});
+        uiSceneBatcher = Luxe.renderer.create_batcher({name: "uiSceneBatcher", layer: 11, camera: uiSceneCamera.view});
+        
+          
+        Luxe.loadJSON("assets/ui/ed_ui_scene5.json", function(j) {
+
+            DynamicExtender.jsonToScene(j.json, uiSceneBatcher, uiScene);
+
+            //TODO
+            Luxe.loadJSON("assets/ui/ed_ui_scene5_components.json", function(j) {
+                componentManager.updateFromJson(j.json);
+                componentManager.activateComponents(uiScene);
+            });
+
+        });
+        
+        
     }
 
     function addColorToList(c:ColorHSV) {
@@ -465,7 +497,11 @@ class Main extends luxe.Game {
             //scene file
             var input = File.read(openFileName + ".json", false);
 
+            var polys = input.readScene(Luxe.renderer.batcher, Luxe.scene);
+
             //read all - regardless of how many lines it is
+            
+            /*
             var inStr = "";
             while (!input.eof()) {
                 inStr += input.readLine();
@@ -474,9 +510,20 @@ class Main extends luxe.Game {
             var inObj = haxe.Json.parse(inStr);
 
             for (l in cast(inObj.layers, Array<Dynamic>)) {
-                Edit.AddLayer(layers, new Polygon({}, [], l), curLayer+1);
+                var p = new Polygon({batcher: Luxe.renderer.batcher, depth: 5}, [], l);
+                Edit.AddLayer(layers, p, curLayer+1);
+                switchLayerSelection(1);
+
+                trace("poly added " + p.geometry.added);
+            }
+            */
+
+            //TODO - rewrite the layer manager
+            for (p in polys) {
+                Edit.AddLayer(layers, p, curLayer+1);
                 switchLayerSelection(1);
             }
+            
 
             input.close();
 
@@ -510,9 +557,12 @@ class Main extends luxe.Game {
     }
 
     public function startDrawing(e:MouseEvent) {
-        var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
-        curLine = new Polyline({color: picker.pickedColor.clone(), depth: aboveLayersDepth+1}, [mousepos]);
-        isDrawing = true;
+        if (e.pos.x < Luxe.screen.w * 0.85) { //HORRIBLE HACKS
+
+            var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
+            curLine = new Polyline({color: picker.pickedColor.clone(), depth: aboveLayersDepth+1}, [mousepos]);
+            isDrawing = true;
+        }
     }
 
     public function smoothDrawing(e:MouseEvent) {
@@ -1253,6 +1303,7 @@ class PlayState extends State {
 
         //HACK
         Luxe.renderer.add_batch(main.uiBatcher);
+        Luxe.renderer.add_batch(main.uiSceneBatcher);
         Luxe.renderer.batcher.add(main.selectedLayerOutline.geometry);
     } //onleave
 
@@ -1262,6 +1313,7 @@ class PlayState extends State {
 
         //HACK
         Luxe.renderer.remove_batch(main.uiBatcher);
+        Luxe.renderer.remove_batch(main.uiSceneBatcher);
         Luxe.renderer.batcher.remove(main.selectedLayerOutline.geometry); 
     } //onenter
 
@@ -1327,12 +1379,9 @@ class GroupState extends State {
             for (v in main.layers.layers) {
                 var poly = cast(v, Polygon);
                 if (Collision.test(groupCollisionArea, poly.collisionBounds()) != null) {
-                    trace(poly.name);
                     polysInGroup.push(poly);
                 }
             }
-
-            trace(polysInGroup);
 
             //remove polys from layer manager, and add them as children to new parent polygon
             //var c = new Vector(0,0);

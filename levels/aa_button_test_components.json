@@ -1,0 +1,23 @@
+[
+    {
+        "components": [
+            {
+                "componentsToActivate": null,
+                "inactiveColor": {
+                    "b": 255,
+                    "r": 255,
+                    "g": 255
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 255,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id0"
+    }
+]

@@ -1,5 +1,6 @@
 import luxe.Visual;
 import luxe.Color;
+import phoenix.Batcher;
 
 import LayerManager;
 
@@ -89,11 +90,13 @@ class RemoveLayerEdit extends Edit {
 	var layerManager:LayerManager;
 	var layer:Visual;
 	var layerIndex:Int;
+	var batcher: Batcher;
 
 	override public function new (layerManager:LayerManager, layerIndex:Int) {
 		this.layerManager = layerManager;
 		this.layer = layerManager.getLayer(layerIndex);
 		this.layerIndex = layerIndex;
+		this.batcher = this.layer.geometry.batchers[0];
 
 		super();
 	}
@@ -102,14 +105,22 @@ class RemoveLayerEdit extends Edit {
 		super.redo();
 
 		layerManager.removeLayer(layer);
-		Luxe.renderer.batcher.remove(layer.geometry);
+		batcher.remove(layer.geometry);
+		//remove children too (is this really the right place for this???)
+		for (c in layer.children) {
+			batcher.remove( cast(c, Visual).geometry );
+		}
 	}
 
 	override public function undo() {
 		super.undo();
 
 		layerManager.addLayer(layer, layerIndex-1);
-		Luxe.renderer.batcher.add(layer.geometry);
+		batcher.add(layer.geometry);
+		//add children here?
+		for (c in layer.children) {
+			batcher.add( cast(c, Visual).geometry );
+		}
 	}
 }
 

@@ -1,0 +1,50 @@
+[
+    {
+        "components": [
+            {
+                "componentsToActivate": ["SwitchToDrawMode"],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": ["SwitchToEditMode"],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    }
+]

@@ -1,13 +1,21 @@
 import luxe.Entity;
 import luxe.Component;
 import haxe.rtti.Meta;
+import luxe.Scene;
 
 //!!! everything in this class probably needs to be renamed !!!
 class ComponentManager {
 	public var componentData : Array<{name:String, components:Array<Dynamic>}> = []; //hack attack
 
 	public function updateFromJson(jsonData) {
-		componentData = jsonData;
+		if (componentData == null) {
+			componentData = jsonData;
+		}
+		else {
+			for (d in cast(jsonData, Array<Dynamic>)) {
+				componentData.push( d );
+			}
+		}
 	}	
 
 	function getEntry(e : Entity) {
@@ -65,21 +73,33 @@ class ComponentManager {
 		return componentData;
 	}
 
-	public function activateComponents() {
+	public function activateComponents(?scene : Scene) {
+		if (scene == null) scene = Luxe.scene;
+
+		trace("ACTIVATE");
+		trace(scene);
+
 		for (entry in componentData) {
-			var e = Luxe.scene.entities.get(entry.name);
-			for (c in entry.components) {
-				var newComponent:Component = Type.createInstance(Type.resolveClass("components." + c.name), [c]);
-				e.add(newComponent);
+			var e = scene.entities.get(entry.name);
+			trace(e);
+			if (e != null) {
+				for (c in entry.components) {
+					var newComponent:Component = Type.createInstance(Type.resolveClass("components." + c.name), [c]);
+					e.add(newComponent);
+				}
 			}
 		}
 	}
 
-	public function deactivateComponents() {
+	public function deactivateComponents(?scene : Scene) {
+		if (scene == null) scene = Luxe.scene;
+
 		for (entry in componentData) {
-			var e = Luxe.scene.entities.get(entry.name);
-			for (c in entry.components) {
-				e.remove(c.name);
+			var e = scene.entities.get(entry.name);
+			if (e != null) {
+				for (c in entry.components) {
+					e.remove(c.name);
+				}
 			}
 		}
 	}
