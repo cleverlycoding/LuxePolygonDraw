@@ -7,6 +7,7 @@ import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher; //necessary to access PrimitiveType
 import luxe.collision.shapes.Polygon in CollisionPoly;
+import luxe.collision.ShapeDrawerLuxe;
 
 using ledoux.UtilityBelt.VectorExtender;
 using ledoux.UtilityBelt.PolylineExtender;
@@ -16,6 +17,9 @@ using Lambda;
 class Polygon extends Visual {
 	public var points:Array<Vector>;
 	var bounds:Rectangle;
+
+	//debug
+	var sdrwr = new ShapeDrawerLuxe();
 
 	//TODO - make new polygon from list of old polygons
 	public override function new(_options:luxe.options.VisualOptions, points:Array<Vector>, ?jsonObj) {
@@ -159,6 +163,17 @@ class Polygon extends Visual {
 		pos = pos.toWorldSpace(transform);
 		size = size.multiply(transform.scale); //is there a better way of doing this?
 		return new Rectangle(pos.x, pos.y, size.x, size.y);
+	}
+
+	public function getRectCollisionBounds() : CollisionPoly {
+		var r = getRectBounds();
+		var cp = new CollisionPoly(0,0,
+							[new Vector(r.x, r.y), new Vector(r.x + r.w, r.y),
+							new Vector(r.x + r.w, r.y + r.h), new Vector(r.x, r.y + r.h)]);
+
+		//sdrwr.drawShape(cp, new Color(1,0,0), false);
+
+		return cp;
 	}
 
 	public function setPoints(points:Array<Vector>) {

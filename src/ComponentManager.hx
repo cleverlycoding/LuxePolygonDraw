@@ -18,7 +18,7 @@ class ComponentManager {
 		}
 	}	
 
-	function getEntry(e : Entity) {
+	public function getEntry(e : Entity) {
 		var entry = null;
 		for (d in componentData) {
 			if (d.name == e.name) entry = d; //no safety checks !!!

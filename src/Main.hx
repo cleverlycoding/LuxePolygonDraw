@@ -89,7 +89,7 @@ class Main extends luxe.Game {
     var polyCollision : CollisionPoly;
 
     //play mode and components
-    var componentManager = new ComponentManager();
+    public var componentManager = new ComponentManager();
 
     //camera and zoom
     var refSize = new Vector(960, 640);
@@ -124,6 +124,7 @@ class Main extends luxe.Game {
         machine.add(new AnimationState({name:"animation"}));
         machine.add(new PlayState({name:"play"}));
         machine.add(new GroupState({name:"group"}));
+        machine.add(new ComponentState({name:"component"}));
         machine.set("draw", this);
 
         //HACK TO LOAD TEST LEVEL IMMEDIATELY
@@ -236,12 +237,12 @@ class Main extends luxe.Game {
         uiSceneBatcher = Luxe.renderer.create_batcher({name: "uiSceneBatcher", layer: 11, camera: uiSceneCamera.view});
         
           
-        Luxe.loadJSON("assets/ui/ed_ui_scene5.json", function(j) {
+        Luxe.loadJSON("assets/ui/ed_ui_scene8.json", function(j) {
 
             DynamicExtender.jsonToScene(j.json, uiSceneBatcher, uiScene);
 
             //TODO
-            Luxe.loadJSON("assets/ui/ed_ui_scene5_components.json", function(j) {
+            Luxe.loadJSON("assets/ui/ed_ui_scene8_components.json", function(j) {
                 componentManager.updateFromJson(j.json);
                 componentManager.activateComponents(uiScene);
             });
@@ -369,6 +370,14 @@ class Main extends luxe.Game {
         } 
     }
 
+    public function Undo() {
+        Edit.Undo();
+    }
+
+    public function Redo() {
+        Edit.Redo();
+    }
+
     public function selectLayerInput(e:KeyEvent) {
         if (e.keycode == Key.key_a) {
             //Go up a layer
@@ -465,84 +474,74 @@ class Main extends luxe.Game {
         //HACK for ios
         
         if (e.keycode == Key.key_1) {
-            //save
-            var rawSaveFileName = Luxe.core.app.io.platform.dialog_save().split(".");
-            var saveFileName = rawSaveFileName[0];
-
-            //scene file
-            var output = File.write(saveFileName + ".json", false);
-
-            var outObj = layers.jsonRepresentation();
-            var outStr = haxe.Json.stringify(outObj);
-            output.writeString(outStr);
-
-            output.close();
-
-            //component file
-            var output = File.write(saveFileName + "_components.json", false);
-
-            var outObj = componentManager.jsonRepresentation();
-            var outStr = haxe.Json.stringify(outObj, null, "    ");
-            output.writeString(outStr);
-
-            output.close();
+            Save();
         }
         else if (e.keycode == Key.key_2) {
-            //load
-            var rawOpenFileName = Luxe.core.app.io.platform.dialog_open().split(".");
-            var openFileName = rawOpenFileName[0];
-
-            trace("file " + openFileName);
-
-            //scene file
-            var input = File.read(openFileName + ".json", false);
-
-            var polys = input.readScene(Luxe.renderer.batcher, Luxe.scene);
-
-            //read all - regardless of how many lines it is
-            
-            /*
-            var inStr = "";
-            while (!input.eof()) {
-                inStr += input.readLine();
-            }
-
-            var inObj = haxe.Json.parse(inStr);
-
-            for (l in cast(inObj.layers, Array<Dynamic>)) {
-                var p = new Polygon({batcher: Luxe.renderer.batcher, depth: 5}, [], l);
-                Edit.AddLayer(layers, p, curLayer+1);
-                switchLayerSelection(1);
-
-                trace("poly added " + p.geometry.added);
-            }
-            */
-
-            //TODO - rewrite the layer manager
-            for (p in polys) {
-                Edit.AddLayer(layers, p, curLayer+1);
-                switchLayerSelection(1);
-            }
-            
-
-            input.close();
-
-            //component file
-            var input = File.read(openFileName + "_components.json", false);
-
-            //read all - regardless of how many lines it is
-            var inStr = "";
-            while (!input.eof()) {
-                inStr += input.readLine();
-            }
-
-            var inObj = haxe.Json.parse(inStr);
-
-            componentManager.updateFromJson(inObj);
-
-            input.close();
+            Load();
         }
         
+    }
+
+    public function Save() {
+        //save
+        var rawSaveFileName = Luxe.core.app.io.platform.dialog_save().split(".");
+        var saveFileName = rawSaveFileName[0];
+
+        //scene file
+        var output = File.write(saveFileName + ".json", false);
+
+        var outObj = layers.jsonRepresentation();
+        var outStr = haxe.Json.stringify(outObj);
+        output.writeString(outStr);
+
+        output.close();
+
+        //component file
+        var output = File.write(saveFileName + "_components.json", false);
+
+        var outObj = componentManager.jsonRepresentation();
+        var outStr = haxe.Json.stringify(outObj, null, "    ");
+        output.writeString(outStr);
+
+        output.close();
+
+    }
+
+    public function Load() {
+        //load
+        var rawOpenFileName = Luxe.core.app.io.platform.dialog_open().split(".");
+        var openFileName = rawOpenFileName[0];
+
+        trace("file " + openFileName);
+
+        //scene file
+        var input = File.read(openFileName + ".json", false);
+
+        var polys = input.readScene(Luxe.renderer.batcher, Luxe.scene);
+
+        //TODO - rewrite the layer manager
+        for (p in polys) {
+            Edit.AddLayer(layers, p, curLayer+1);
+            switchLayerSelection(1);
+        }
+        
+
+        input.close();
+
+        //component file
+        var input = File.read(openFileName + "_components.json", false);
+
+        //read all - regardless of how many lines it is
+        var inStr = "";
+        while (!input.eof()) {
+            inStr += input.readLine();
+        }
+
+        var inObj = haxe.Json.parse(inStr);
+
+        componentManager.updateFromJson(inObj);
+
+        input.close();
     }
 
     public function zoomInput(e:KeyEvent) {
@@ -901,6 +900,10 @@ class DrawState extends State {
         main.addCircleInput(e);
         
         //switch modes
+        if (e.keycode == Key.key_v) {
+            machine.set("component", main);
+        }
+
         if (e.keycode == Key.key_l) {
             //enter color picker mode
             machine.set("pickcolor", main);
@@ -1274,6 +1277,8 @@ class AnimationState extends State {
         if (e.keycode == Key.key_h) { //attach selected bone to selected poly (1:1)
             main.curPoly().add(new PuppetAnimation({name: "PuppetAnimation"}));
             cast(main.curPoly().get("PuppetAnimation"), PuppetAnimation).bone = selectedBone;
+            //WORK IN PROGRESS
+            //cast(main.curPoly().get("PuppetAnimation"), PuppetAnimation).boneName = selectedBone.name;
         }
 
         if (e.keycode == Key.key_b) {
@@ -1325,6 +1330,149 @@ class PlayState extends State {
     }    
 } 
 
+
+class ComponentState extends State {
+    var main : Main;
+
+    var curEntry : Dynamic;
+
+    var addCollisionBounds : CollisionPoly = new CollisionPoly(0,0,[new Vector(0,0), new Vector(0,0), new Vector(0,0)]);
+
+    override function init() {
+    } //init
+
+    override function onleave<T>( _main:T ) {
+    } //onleave
+
+    override function onenter<T>( _main:T ) {
+        main = cast(_main, Main);
+    } //onenter
+
+    override function update(dt:Float) {
+        
+        if (main.curPoly() != null) {
+            curEntry = main.componentManager.getEntry(main.curPoly());
+        
+            var numComponents = 0;
+            if (curEntry != null) {
+                numComponents = curEntry.components.length;
+            }
+
+            var componentNames = [];
+            if (curEntry != null) {
+                for (c in cast(curEntry.components, Array<Dynamic>)) {
+                    componentNames.push(c.name);
+                }
+                trace(componentNames);
+            }
+
+            Luxe.draw.box({
+                x : -Luxe.camera.pos.x + main.curPoly().pos.x - 20,
+                y : -Luxe.camera.pos.y + main.curPoly().pos.y - 10,
+                w : 60,
+                h : 30,
+                batcher: main.uiBatcher,
+                immediate : true,
+                color : new Color(255, 255, 255)
+            });
+
+            Luxe.draw.rectangle({
+                x : -Luxe.camera.pos.x + main.curPoly().pos.x - 20,
+                y : -Luxe.camera.pos.y + main.curPoly().pos.y - 10,
+                w : 60,
+                h : 30,
+                batcher: main.uiBatcher,
+                immediate : true,
+                color : new Color(0, 0, 0)
+            });
+
+            Luxe.draw.text({
+                color: new Color(0,0,0),
+                pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x - 10, 
+                    -Luxe.camera.pos.y + main.curPoly().pos.y - 10),
+                point_size : 20,
+                text : "c: " + numComponents,
+                immediate : true,
+                batcher : main.uiBatcher
+            });
+
+            var r = main.curPoly().getRectBounds();
+            var h = (numComponents+1) * 20;
+            Luxe.draw.box({
+                x: -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20,
+                y: -Luxe.camera.pos.y + main.curPoly().pos.y - h/2,
+                w : 200,
+                h : h,
+                immediate : true,
+                color : new Color(1,1,1),
+                batcher : main.uiBatcher
+            });
+
+            var i = 0;
+
+            for (cName in componentNames) {
+                Luxe.draw.text({
+                    color: new Color(0,0,0),
+                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20, 
+                        -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
+                    point_size : 20,
+                    text : cName,
+                    immediate : true,
+                    batcher : main.uiBatcher
+                });
+                Luxe.draw.text({
+                    color: new Color(1,0,0),
+                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2, 
+                        -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
+                    point_size : 20,
+                    text : "X",
+                    immediate : true,
+                    batcher : main.uiBatcher
+                });
+                i++;
+            }
+
+            Luxe.draw.text({
+                color: new Color(0,1,0),
+                pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20, 
+                    -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
+                point_size : 20,
+                text : "+ Add Component",
+                immediate : true,
+                batcher : main.uiBatcher
+            });
+
+            var x = -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20;
+            var y = -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20);
+            var w = 200;
+            var h = 20;
+            addCollisionBounds = new CollisionPoly(0,0,[new Vector(x,y), new Vector(x+w,y),
+                                        new Vector(x+w,y+h), new Vector(x,y+h)]);
+        }
+        
+    }
+
+    override function onkeydown(e:KeyEvent) {
+        main.selectLayerInput(e);
+
+        main.addSelectedLayerToComponentManagerInput(e);
+
+        if (e.keycode == Key.key_v) {
+            machine.set("draw", main);
+        }
+    }
+
+    override function onmousedown(e:MouseEvent) {
+        if (Collision.pointInPoly(e.pos, addCollisionBounds)) {
+            //load
+            var rawOpenFileName = Luxe.core.app.io.platform.dialog_open( "Load Component", [{extension:"hx"}] ).split(".");
+            var openFileName = rawOpenFileName[0];
+            var fileNameSplit = openFileName.split("/"); //need to change for other OSs?
+            var className = fileNameSplit[fileNameSplit.length-1];
+            main.componentManager.addComponent(main.curPoly(), className);
+        }
+    }
+}
 
 class GroupState extends State {
     var startGroupPos = new Vector(0,0);

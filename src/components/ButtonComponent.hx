@@ -45,7 +45,8 @@ class ButtonComponent extends EditorComponent {
 	}
 
 	override function onmousedown(e : MouseEvent) {
-		if ( Collision.pointInPoly(e.pos, polygon.collisionBounds()) ) {
+
+		if ( Collision.pointInPoly(e.pos, polygon.getRectCollisionBounds()) ) {
 			isActive = !isActive;
 			isActive ? activate() : deactivate();
 		}

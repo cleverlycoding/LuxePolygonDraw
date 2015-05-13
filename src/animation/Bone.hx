@@ -34,15 +34,28 @@ class Bone extends Visual {
 	public var frameIndex (default, set) : Int = 0;
 	var isAnimating : Bool;
 	
-	override public function new(_options : luxe.options.VisualOptions, length : Float, rotation_z : Float) {
-		_options.name = "Bone";
-		_options.name_unique = true;
+	override public function new(_options : luxe.options.VisualOptions, length : Float, rotation_z : Float, ?jsonObj) {
+		
+		if (jsonObj != null) {
+			_options.name = jsonObj.name;
+		}
+		else {
+			_options.name = "Bone";
+			_options.name_unique = true;
+		}
+		
 		super(_options);
 
 		trace(this.name);
 
-		this.length = length;
-		this.rotation_z = rotation_z;
+		if (jsonObj != null) {
+			this.length = jsonObj.length;
+			this.rotation_z = jsonObj.frames[0];
+		}
+		else {	
+			this.length = length;
+			this.rotation_z = rotation_z;
+		}
 
 		geometry = new Geometry({
 			batcher : _options.batcher,
@@ -67,7 +80,12 @@ class Bone extends Visual {
 		geometry.color = new Color(255,255,255);
 
 		//start keeping track of frames
-		if (parent != null) {
+		if (jsonObj != null) {
+			for (rot in jsonObj.frames) {
+				frames.push({length: this.length, rotation_z: rot});
+			}
+		}
+		else if (parent != null) {
 			for (i in 0 ... cast(parent).frames.length) { //make sure the bones has the same # of frames as parent
 				frames.push({length : this.length, rotation_z : this.rotation_z});
 			}
@@ -246,5 +264,13 @@ class Bone extends Visual {
 
 	public function endPos() : Vector {
 		return worldPos().clone().add(transform.up().multiplyScalar(length));
+	}
+
+	public function jsonRepresentation() {
+		var jsonFrames = [];
+		for ( f in frames ) {
+			jsonFrames.push(f.rotation_z);
+		}
+		return {name: this.name, parent: this.parent.name, length: this.length, frames: jsonFrames};
 	}
 }

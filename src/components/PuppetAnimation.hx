@@ -20,6 +20,9 @@ using ledoux.UtilityBelt.VectorExtender;
  */
 class PuppetAnimation extends EditorComponent {
 
+	@editor
+	public var boneName (default, set) : String;
+
 	var polygon : Polygon;
 	public var bone (default, set) : Bone;
 	var vertexDisplacements : Array<Vector>;
@@ -52,6 +55,20 @@ class PuppetAnimation extends EditorComponent {
 			vertexDisplacements.push(disp);
 		}
 
+		//boneName = bone.name;
+
 		return bone;
+	}
+
+	function set_boneName(name : String) : String {
+		boneName = name;
+
+		trace("connect!");
+		trace(boneName);
+		trace(Luxe.scene.entities.get(boneName));
+
+		bone = cast(Luxe.scene.entities.get(boneName), Bone);
+
+		return boneName;
 	}
 }
