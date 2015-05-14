@@ -1337,6 +1337,7 @@ class ComponentState extends State {
     var curEntry : Dynamic;
 
     var addCollisionBounds : CollisionPoly = new CollisionPoly(0,0,[new Vector(0,0), new Vector(0,0), new Vector(0,0)]);
+    var removeComponentCollisionBoxes : Array<CollisionPoly> = [];
 
     override function init() {
     } //init
@@ -1351,6 +1352,8 @@ class ComponentState extends State {
     override function update(dt:Float) {
         
         if (main.curPoly() != null) {
+
+            //get data about selected object
             curEntry = main.componentManager.getEntry(main.curPoly());
         
             var numComponents = 0;
@@ -1363,9 +1366,10 @@ class ComponentState extends State {
                 for (c in cast(curEntry.components, Array<Dynamic>)) {
                     componentNames.push(c.name);
                 }
-                trace(componentNames);
+                //trace(componentNames);
             }
 
+            //draw component # box
             Luxe.draw.box({
                 x : -Luxe.camera.pos.x + main.curPoly().pos.x - 20,
                 y : -Luxe.camera.pos.y + main.curPoly().pos.y - 10,
@@ -1396,42 +1400,57 @@ class ComponentState extends State {
                 batcher : main.uiBatcher
             });
 
+            //draw component box
             var r = main.curPoly().getRectBounds();
-            var h = (numComponents+1) * 20;
+            var h = 10 + (numComponents+1) * 20;
             Luxe.draw.box({
                 x: -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20,
                 y: -Luxe.camera.pos.y + main.curPoly().pos.y - h/2,
-                w : 200,
+                w : 220,
                 h : h,
                 immediate : true,
                 color : new Color(1,1,1),
                 batcher : main.uiBatcher
             });
 
+            //write component names
             var i = 0;
-
+            removeComponentCollisionBoxes = []; //hacky ass way to do this shit <3 <3 <3
             for (cName in componentNames) {
                 Luxe.draw.text({
                     color: new Color(0,0,0),
-                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20, 
+                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 40, 
                         -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
                     point_size : 20,
                     text : cName,
                     immediate : true,
                     batcher : main.uiBatcher
                 });
+
                 Luxe.draw.text({
                     color: new Color(1,0,0),
-                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2, 
+                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20, 
                         -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
                     point_size : 20,
                     text : "X",
                     immediate : true,
                     batcher : main.uiBatcher
                 });
+
+                var x = -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20;
+                var y = -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20);
+                var w = 20;
+                var h = 20;
+                removeComponentCollisionBoxes.push( 
+                                        new CollisionPoly(0,0,
+                                                [new Vector(x,y), new Vector(x+w,y),
+                                                    new Vector(x+w,y+h), new Vector(x,y+h)])); //wtf is this formating le doux <3
+
+                
                 i++;
             }
 
+            //add component text
             Luxe.draw.text({
                 color: new Color(0,1,0),
                 pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20, 
@@ -1442,6 +1461,7 @@ class ComponentState extends State {
                 batcher : main.uiBatcher
             });
 
+            //update collision box
             var x = -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20;
             var y = -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20);
             var w = 200;
@@ -1470,6 +1490,18 @@ class ComponentState extends State {
             var fileNameSplit = openFileName.split("/"); //need to change for other OSs?
             var className = fileNameSplit[fileNameSplit.length-1];
             main.componentManager.addComponent(main.curPoly(), className);
+        }
+
+        for (i in 0 ... removeComponentCollisionBoxes.length) {
+            trace("remove comp " + i + "??");
+
+            var rccb = removeComponentCollisionBoxes[i];
+            var comp = curEntry.components[i];
+
+            if (Collision.pointInPoly(e.pos, rccb)) {
+                trace("kill dat shit");
+                curEntry.components.remove(comp);
+            }
         }
     }
 }
