@@ -1,0 +1,26 @@
+[
+    {
+        "components": [
+            {
+                "componentsToActivate": ["StopGame"],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "StopGame"
+            }
+        ],
+        "name": "stop_button"
+    }
+]

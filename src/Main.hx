@@ -77,10 +77,15 @@ class Main extends luxe.Game {
     var scaleDirWorld : Vector;
 
     //ui
-    public var uiBatcher : Batcher;
+    public var uiBatcher : Batcher; //old ui
+    //main ui
     public var uiSceneBatcher : Batcher; //batcher for the JSON scene
     public var uiSceneCamera : Camera;
     public var uiScene : Scene;
+    //play mode ui
+    public var playModeUIBatcher : Batcher;
+    public var playModeUICamera : Camera;
+    public var playModeUIScene : Scene;
 
     //states
     public var machine : States;
@@ -237,18 +242,35 @@ class Main extends luxe.Game {
         uiSceneBatcher = Luxe.renderer.create_batcher({name: "uiSceneBatcher", layer: 11, camera: uiSceneCamera.view});
         
           
-        Luxe.loadJSON("assets/ui/ed_ui_scene8.json", function(j) {
+        Luxe.loadJSON("assets/ui/ed_ui_scene9.json", function(j) {
 
             DynamicExtender.jsonToScene(j.json, uiSceneBatcher, uiScene);
 
             //TODO
-            Luxe.loadJSON("assets/ui/ed_ui_scene8_components.json", function(j) {
+            Luxe.loadJSON("assets/ui/ed_ui_scene9_components.json", function(j) {
                 componentManager.updateFromJson(j.json);
                 componentManager.activateComponents(uiScene);
             });
 
         });
         
+
+        playModeUIScene = new Scene("playModeUIScene");
+        playModeUICamera = new Camera({name:"playModeUICamera", scene: playModeUIScene});
+        playModeUIBatcher = Luxe.renderer.create_batcher({name: "playModeUIBatcher", layer: 11, camera: playModeUICamera.view});
+
+        Luxe.loadJSON("assets/ui/play_ui_scene2.json", function(j) {
+
+            DynamicExtender.jsonToScene(j.json, playModeUIBatcher, playModeUIScene);
+
+            //TODO
+            Luxe.loadJSON("assets/ui/play_ui_scene2_components.json", function(j) {
+                componentManager.updateFromJson(j.json);
+
+                Luxe.renderer.remove_batch(playModeUIBatcher); //make it invisible
+            });
+
+        });
         
     }
 
@@ -840,10 +862,16 @@ class Main extends luxe.Game {
 
     public function enterPlayMode() {
         componentManager.activateComponents();
+
+        Luxe.renderer.add_batch(playModeUIBatcher);
+        componentManager.activateComponents(playModeUIScene);
     }
 
     public function exitPlayMode() {
         componentManager.deactivateComponents();
+
+        Luxe.renderer.remove_batch(playModeUIBatcher);
+        componentManager.deactivateComponents(playModeUIScene);
     }
 
     public function addSelectedLayerToComponentManagerInput(e : KeyEvent) {

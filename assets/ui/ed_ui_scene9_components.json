@@ -1,0 +1,1118 @@
+[
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 0,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "name": "Undo"
+            },
+            {
+                "componentsToActivate": [
+                    "Undo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id6"
+    },
+    {
+        "components": [
+            {
+                "name": "Redo"
+            },
+            {
+                "componentsToActivate": [
+                    "Redo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 0,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id7"
+    },
+    {
+        "components": [
+            {
+                "name": "Save"
+            },
+            {
+                "componentsToActivate": [
+                    "Save"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id8"
+    },
+    {
+        "components": [
+            {
+                "name": "Load"
+            },
+            {
+                "componentsToActivate": [
+                    "Load"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id9"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 0,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "name": "Undo"
+            },
+            {
+                "componentsToActivate": [
+                    "Undo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id6"
+    },
+    {
+        "components": [
+            {
+                "name": "Redo"
+            },
+            {
+                "componentsToActivate": [
+                    "Redo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 0,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id7"
+    },
+    {
+        "components": [
+            {
+                "name": "Save"
+            },
+            {
+                "componentsToActivate": [
+                    "Save"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id8"
+    },
+    {
+        "components": [
+            {
+                "name": "Load"
+            },
+            {
+                "componentsToActivate": [
+                    "Load"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id9"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToComponentMode"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToComponentMode"
+            }
+        ],
+        "name": "id20"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 0,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "name": "Undo"
+            },
+            {
+                "componentsToActivate": [
+                    "Undo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id6"
+    },
+    {
+        "components": [
+            {
+                "name": "Redo"
+            },
+            {
+                "componentsToActivate": [
+                    "Redo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 0,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id7"
+    },
+    {
+        "components": [
+            {
+                "name": "Save"
+            },
+            {
+                "componentsToActivate": [
+                    "Save"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id8"
+    },
+    {
+        "components": [
+            {
+                "name": "Load"
+            },
+            {
+                "componentsToActivate": [
+                    "Load"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id9"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 0,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "activeColor": {
+                    "r": 0,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1"
+    },
+    {
+        "components": [
+            {
+                "name": "Undo"
+            },
+            {
+                "componentsToActivate": [
+                    "Undo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id6"
+    },
+    {
+        "components": [
+            {
+                "name": "Redo"
+            },
+            {
+                "componentsToActivate": [
+                    "Redo"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 0,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id7"
+    },
+    {
+        "components": [
+            {
+                "name": "Save"
+            },
+            {
+                "componentsToActivate": [
+                    "Save"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id8"
+    },
+    {
+        "components": [
+            {
+                "name": "Load"
+            },
+            {
+                "componentsToActivate": [
+                    "Load"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id9"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToComponentMode"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToComponentMode"
+            }
+        ],
+        "name": "id20"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": ["StartGame"],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 1
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "StartGame"
+            }
+        ],
+        "name": "id42"
+    }
+]
