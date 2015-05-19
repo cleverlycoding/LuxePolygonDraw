@@ -64,7 +64,7 @@ class Main extends luxe.Game {
 	public var selectedLayerOutline : Polyline;
 
 	//color picker
-	var picker : ColorPicker;
+	public var picker : ColorPicker;
 	var slider : Slider;
 	var curColorIcon : QuadGeometry;
 	var colorList : Array<ColorHSV> = [];
@@ -220,8 +220,10 @@ class Main extends luxe.Game {
             batcher: uiBatcher
         });
 
+        /*
         curColorIcon = Luxe.draw.box({w: 30, h: 30, x: 0, y: 0, batcher: uiBatcher});
         curColorIcon.color = picker.pickedColor;
+        */
 
         //UI events
         slider.onSliderMove = function() {
@@ -242,12 +244,12 @@ class Main extends luxe.Game {
         uiSceneBatcher = Luxe.renderer.create_batcher({name: "uiSceneBatcher", layer: 11, camera: uiSceneCamera.view});
         
           
-        Luxe.loadJSON("assets/ui/ed_ui_scene9.json", function(j) {
+        Luxe.loadJSON("assets/ui/ed_ui_scene11.json", function(j) {
 
             DynamicExtender.jsonToScene(j.json, uiSceneBatcher, uiScene);
 
             //TODO
-            Luxe.loadJSON("assets/ui/ed_ui_scene9_components.json", function(j) {
+            Luxe.loadJSON("assets/ui/ed_ui_scene11_components.json", function(j) {
                 componentManager.updateFromJson(j.json);
                 componentManager.activateComponents(uiScene);
             });
@@ -485,7 +487,7 @@ class Main extends luxe.Game {
             trace(points);
 
             //var newPLine = new Polyline({color: picker.color}, points);
-            var newPolygon = new Polygon({color: curColorIcon.color.clone()}, points);
+            var newPolygon = new Polygon({color: picker.pickedColor.clone()}, points);
             Edit.AddLayer(layers, newPolygon, curLayer+1);
             switchLayerSelection(1);
         }
