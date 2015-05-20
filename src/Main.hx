@@ -60,7 +60,7 @@ class Main extends luxe.Game {
 	//layers
 	public var layers = new LayerManager(0, 1, 1000);
 	var aboveLayersDepth = 10001;
-	var curLayer = 0;
+	public var curLayer = 0;
 	public var selectedLayerOutline : Polyline;
 
 	//color picker
@@ -244,12 +244,12 @@ class Main extends luxe.Game {
         uiSceneBatcher = Luxe.renderer.create_batcher({name: "uiSceneBatcher", layer: 11, camera: uiSceneCamera.view});
         
           
-        Luxe.loadJSON("assets/ui/ed_ui_scene11.json", function(j) {
+        Luxe.loadJSON("assets/ui/ed_ui_scene14.json", function(j) {
 
             DynamicExtender.jsonToScene(j.json, uiSceneBatcher, uiScene);
 
             //TODO
-            Luxe.loadJSON("assets/ui/ed_ui_scene11_components.json", function(j) {
+            Luxe.loadJSON("assets/ui/ed_ui_scene14_components.json", function(j) {
                 componentManager.updateFromJson(j.json);
                 componentManager.activateComponents(uiScene);
             });
@@ -298,6 +298,7 @@ class Main extends luxe.Game {
     	slider.visible = on;
     }
 
+    //COMBINE THESE TWO FUNCTION OBVIOUSLY \/\/\/\/
     function switchLayerSelection(dir:Int) {
     	curLayer += dir;
 
@@ -319,6 +320,23 @@ class Main extends luxe.Game {
     	else {
 	    	selectedLayerOutline.setPoints([]);
     	}
+    }
+
+    public function goToLayer(index:Int) {
+        if (layers.getNumLayers() > 0) {
+            curLayer = index;
+
+            var poly : Polygon = cast(layers.getLayer(curLayer), Polygon);
+
+            //close loop
+            var loop = poly.getPoints();
+            var start = loop[0];
+            loop.push(start);
+
+            selectedLayerOutline.setPoints(loop);
+
+            polyCollision = poly.collisionBounds();
+        }
     }
 
     function addPointToCurrentLine(p:Vector) {
@@ -563,7 +581,9 @@ class Main extends luxe.Game {
 
         var inObj = haxe.Json.parse(inStr);
 
-        componentManager.updateFromJson(inObj);
+        componentManager.updateFromJson(inObj, true);
+
+        componentManager.jsonRepresentation();
 
         input.close();
     }

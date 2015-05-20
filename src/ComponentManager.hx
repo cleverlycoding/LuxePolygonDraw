@@ -3,12 +3,32 @@ import luxe.Component;
 import haxe.rtti.Meta;
 import luxe.Scene;
 
+//!!!!!! this whole class should be rewritten out of existence - these could be static public methods probably
 //!!! everything in this class probably needs to be renamed !!!
 class ComponentManager {
 	public var componentData : Array<{name:String, components:Array<Dynamic>}> = []; //hack attack
 
-	public function updateFromJson(jsonData) {
-		if (componentData == null) {
+	//noDupes is a hack - please get rid of as soon as possible
+	public function updateFromJson(jsonData, ?noDupes:Bool) {
+		if (noDupes == null) noDupes = false;
+		if (noDupes) { //HORRIFYING HACK
+			for (d in cast(jsonData, Array<Dynamic>)) {
+				if (getEntryByName(d.name) != null) {
+					var e = Luxe.scene.entities.get(d.name); //assume the main scene contains the new dupes
+					
+					Luxe.scene.remove(e);
+					e.name = e.name + "x"; //just keep adding Xs to get "unique" names
+					Luxe.scene.add(e);
+
+					d.name = e.name;
+					componentData.push( d );
+				}
+				else {
+					componentData.push( d );
+				}
+			}
+		}
+		else if (componentData == null) {
 			componentData = jsonData;
 		}
 		else {
@@ -22,6 +42,14 @@ class ComponentManager {
 		var entry = null;
 		for (d in componentData) {
 			if (d.name == e.name) entry = d; //no safety checks !!!
+		}
+		return entry;
+	}
+
+	public function getEntryByName(n : String) {
+		var entry = null;
+		for (d in componentData) {
+			if (d.name == n) entry = d; //no safety checks !!!
 		}
 		return entry;
 	}
@@ -69,8 +97,20 @@ class ComponentManager {
 		entry.components.push(classData);
 	}
 
-	public function jsonRepresentation() {
-		return componentData;
+	function getComponentsOnlyFromScene(scene: Scene) {
+		var componentsOnlyFromScene = [];
+		for (entry in componentData) {
+			if (scene.entities.exists(entry.name)) {
+				componentsOnlyFromScene.push(entry);
+			}
+		}
+		trace("COMPONENTS FROM " + scene.name + " : " + componentsOnlyFromScene.length);
+		return componentsOnlyFromScene;
+	}
+
+	public function jsonRepresentation(?scene : Scene) {
+		if (scene == null) scene = Luxe.scene;
+		return getComponentsOnlyFromScene(scene);
 	}
 
 	public function activateComponents(?scene : Scene) {

@@ -1,0 +1,299 @@
+[
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToDrawMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 0,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToDrawMode"
+            }
+        ],
+        "name": "id0x"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "SwitchToEditMode"
+                ],
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 0,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToEditMode"
+            }
+        ],
+        "name": "id1x"
+    },
+    {
+        "components": [
+            {
+                "name": "Undo"
+            },
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "Undo"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id6x"
+    },
+    {
+        "components": [
+            {
+                "name": "Redo"
+            },
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "Redo"
+                ],
+                "activeColor": {
+                    "r": 0,
+                    "b": 0,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id7x"
+    },
+    {
+        "components": [
+            {
+                "name": "Save"
+            },
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "Save"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id8x"
+    },
+    {
+        "components": [
+            {
+                "name": "Load"
+            },
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "Load"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            }
+        ],
+        "name": "id9x"
+    },
+    {
+        "components": [
+            {
+                "componentsToActivate": [
+                    "SwitchToComponentMode"
+                ],
+                "inactiveColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "activeColor": {
+                    "b": 1,
+                    "r": 1,
+                    "g": 0
+                },
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "SwitchToComponentMode"
+            }
+        ],
+        "name": "id20x"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "StartGame"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "StartGame"
+            }
+        ],
+        "name": "id42x"
+    },
+    {
+        "components": [
+            {
+                "name": "MatchColorPicker"
+            },
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "ColorModeSwitch"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "ColorModeSwitch"
+            }
+        ],
+        "name": "id131x"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "DropColor"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "DropColor"
+            }
+        ],
+        "name": "id398x"
+    },
+    {
+        "components": [
+            {
+                "inactiveColor": {
+                    "r": 1,
+                    "b": 1,
+                    "g": 1
+                },
+                "componentsToActivate": [
+                    "PickUpColor"
+                ],
+                "activeColor": {
+                    "r": 1,
+                    "b": 0,
+                    "g": 0
+                },
+                "buttonGroup": null,
+                "isSwitch": false,
+                "name": "ButtonComponent"
+            },
+            {
+                "name": "PickUpColor"
+            }
+        ],
+        "name": "id399x"
+    },
+    {
+        "components": [
+            {
+                "name": "LayerControl"
+            }
+        ],
+        "name": "id23"
+    }
+]
