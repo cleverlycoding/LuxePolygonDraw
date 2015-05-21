@@ -299,7 +299,7 @@ class Main extends luxe.Game {
     }
 
     //COMBINE THESE TWO FUNCTION OBVIOUSLY \/\/\/\/
-    function switchLayerSelection(dir:Int) {
+    public function switchLayerSelection(dir:Int) {
     	curLayer += dir;
 
     	if (curLayer < 0) curLayer = 0;
