@@ -7,10 +7,14 @@ import luxe.Color;
 import luxe.Input.MouseEvent;
 import luxe.Rectangle;
 import luxe.Visual;
+import phoenix.geometry.RectangleGeometry;
+import phoenix.geometry.CircleGeometry;
 import luxe.utils.Maths;
 
 import luxe.collision.Collision;
 import luxe.collision.shapes.Polygon in CollisionPoly;
+
+using ledoux.UtilityBelt.VectorExtender;
 
 class LayerControl extends EditorComponent {
 
@@ -19,12 +23,36 @@ class LayerControl extends EditorComponent {
 
 	var isSelectingLayer : Bool;
 	var isMovingLayer : Bool;
+	var isGrouping : Bool;
 	
 	var thumbnailPoly : Polygon; 
+	var groupHandle : Visual;
+	var enterGroupHandle : Visual;
+
+	var closestLayerToGroupHandle : Int;
 
 	override function init() {
 		polygon = cast entity;
 		bounds = polygon.getRectBounds();
+
+		//create extra geometry
+		groupHandle = new Visual({
+			pos: new Vector(bounds.x - 15, bounds.y),
+			color: new Color(0,1,0),
+			batcher: Main.instance.uiSceneBatcher,
+			depth: 2000,
+			immediate: false,
+			geometry: Luxe.draw.circle({r:10})
+		});
+
+		enterGroupHandle = new Visual({
+			pos: new Vector(bounds.x + bounds.w + 110, bounds.y),
+			color: new Color(1,0,1),
+			batcher: Main.instance.uiSceneBatcher,
+			depth: 2000,
+			immediate: false,
+			geometry: Luxe.draw.circle({r:15})
+		});
 	}
 
 	override function update(dt : Float) {
@@ -34,7 +62,13 @@ class LayerControl extends EditorComponent {
 
 		for (h in layerLineHeights()) {
 
-			var c = (i == Main.instance.curLayer) ? new Color(255,255,0) : new Color(255,255,255);
+			var isSelectedLayer = (i == Main.instance.curLayer);
+			var isSelectedGroup = ( isGrouping && 
+									((closestLayerToGroupHandle > Main.instance.curLayer 
+										&& i <= closestLayerToGroupHandle && i > Main.instance.curLayer) || 
+									(closestLayerToGroupHandle < Main.instance.curLayer 
+										&& i >= closestLayerToGroupHandle && i < Main.instance.curLayer)) );
+			var c = (isSelectedLayer || isSelectedGroup) ? new Color(255,255,0) : new Color(255,255,255);
 
 			Luxe.draw.line({
 				p0: new Vector(bounds.x, h),
@@ -52,6 +86,9 @@ class LayerControl extends EditorComponent {
 
 	override function onmousedown(e : MouseEvent) {
 
+		if (e.pos.distance(groupHandle.pos) < 15) {
+			isGrouping = true;
+		}
 		if ( Collision.pointInPoly(e.pos, polygon.getRectCollisionBounds()) ) {
 			selectLayerWithCursor(e.pos.y);
 			isSelectingLayer = true;
@@ -62,6 +99,9 @@ class LayerControl extends EditorComponent {
 	}
 
 	override function onmousemove(e : MouseEvent) {
+		if (isGrouping) {
+			moveGroupingSelector(e.pos.y);
+		}
 		if ( isSelectingLayer ) {
 			selectLayerWithCursor(e.pos.y);
 		}
@@ -76,9 +116,56 @@ class LayerControl extends EditorComponent {
 			var curP = Main.instance.curPoly();
 			Edit.RemoveLayer(Main.instance.layers, 0);
 		}
+		else if (isGrouping && closestLayerToGroupHandle != Main.instance.curLayer) {
+			mergeGroup();
+		}
 
 		isSelectingLayer = false;
 		isMovingLayer = false;
+		isGrouping = false;
+	}
+
+	function mergeGroup() {
+
+		var groupLayer = cast(Math.min(closestLayerToGroupHandle, Main.instance.curLayer), Int);
+
+		var polysInGroup = [];
+		var i = 0;
+		for (l in Main.instance.layers.layers) {
+
+			var isSelectedGroup = ( i == Main.instance.curLayer || 
+									((closestLayerToGroupHandle > Main.instance.curLayer 
+										&& i <= closestLayerToGroupHandle && i > Main.instance.curLayer) || 
+									(closestLayerToGroupHandle < Main.instance.curLayer 
+										&& i >= closestLayerToGroupHandle && i < Main.instance.curLayer)) );
+			
+
+			if (isSelectedGroup) {
+				polysInGroup.push(l);
+			}
+
+			i++;
+
+		}
+
+        var parentPoly = new Polygon({}, []);
+
+		for (childPoly in polysInGroup) {
+			Main.instance.layers.removeLayer(childPoly);
+			childPoly.parent = parentPoly;
+		}
+
+		parentPoly.recenter();
+
+		Main.instance.layers.addLayer(parentPoly, groupLayer);
+
+		Main.instance.switchLayerSelection(groupLayer);
+	}
+
+	function moveGroupingSelector(cursorHeight:Float) {
+		var clampedHeight = Maths.clamp(cursorHeight, bounds.y, bounds.y + bounds.h);
+		groupHandle.pos.y = clampedHeight;
+		closestLayerToGroupHandle = findClosestLayer(groupHandle.pos.y);
 	}
 
 	function moveLayerWithCursor(cursorHeight:Float) {
@@ -165,6 +252,9 @@ class LayerControl extends EditorComponent {
 
 		var scaleRatio = thumbnailPoly.getRectBounds().w / thumbWidth;
 		thumbnailPoly.scale = thumbnailPoly.scale.divideScalar(scaleRatio);
+
+		groupHandle.pos.y = heights[closestLayer];
+		enterGroupHandle.pos.y = heights[closestLayer];
 	}
 
 	//from lowest to highest
