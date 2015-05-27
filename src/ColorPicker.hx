@@ -5,7 +5,7 @@ import luxe.Vector;
 import luxe.utils.Maths;
 import phoenix.geometry.*;
 
-using ledoux.UtilityBelt.VectorExtender;
+using utilities.VectorExtender;
 
 class ColorPicker extends Visual {
 	public var pickedColor (default, set) : ColorHSV = new ColorHSV(0, 0, 1);

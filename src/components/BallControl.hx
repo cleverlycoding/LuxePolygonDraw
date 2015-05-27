@@ -10,7 +10,7 @@ import luxe.tween.Actuate;
 
 import Polygon;
 
-using ledoux.UtilityBelt.VectorExtender;
+using utilities.VectorExtender;
 
 class BallControl extends EditorComponent {
 

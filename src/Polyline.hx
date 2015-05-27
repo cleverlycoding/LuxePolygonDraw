@@ -6,8 +6,8 @@ import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher; //necessary to access PrimitiveType
 
-using ledoux.UtilityBelt.VectorExtender;
-using ledoux.UtilityBelt.PolylineExtender;
+using utilities.VectorExtender;
+using utilities.PolylineExtender;
 
 class Polyline extends Visual {
 	var points:Array<Vector>;

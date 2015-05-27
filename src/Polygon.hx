@@ -9,8 +9,8 @@ import phoenix.Batcher; //necessary to access PrimitiveType
 import luxe.collision.shapes.Polygon in CollisionPoly;
 import luxe.collision.ShapeDrawerLuxe;
 
-using ledoux.UtilityBelt.VectorExtender;
-using ledoux.UtilityBelt.PolylineExtender;
+using utilities.VectorExtender;
+using utilities.PolylineExtender;
 
 using Lambda;
 

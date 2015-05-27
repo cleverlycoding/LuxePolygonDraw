@@ -41,11 +41,11 @@ import animation.Bone;
 import components.Animation;
 import components.PuppetAnimation;
 
-using ledoux.UtilityBelt.VectorExtender;
-using ledoux.UtilityBelt.PolylineExtender;
-using ledoux.UtilityBelt.TransformExtender;
-using ledoux.UtilityBelt.FileInputExtender;
-import ledoux.UtilityBelt.DynamicExtender;
+using utilities.VectorExtender;
+using utilities.PolylineExtender;
+using utilities.TransformExtender;
+using utilities.FileInputExtender;
+using utilities.PolygonGroupExtender;
 
 class Main extends luxe.Game {
 
@@ -246,7 +246,7 @@ class Main extends luxe.Game {
           
         Luxe.loadJSON("assets/ui/ed_ui_scene14.json", function(j) {
 
-            DynamicExtender.jsonToScene(j.json, uiSceneBatcher, uiScene);
+            (new Array<Polygon>()).createFromJson(j.json, uiSceneBatcher, uiScene);
 
             //TODO
             Luxe.loadJSON("assets/ui/ed_ui_scene14_components.json", function(j) {
@@ -263,7 +263,7 @@ class Main extends luxe.Game {
 
         Luxe.loadJSON("assets/ui/play_ui_scene2.json", function(j) {
 
-            DynamicExtender.jsonToScene(j.json, playModeUIBatcher, playModeUIScene);
+            (new Array<Polygon>()).createFromJson(j.json, playModeUIBatcher, playModeUIScene);
 
             //TODO
             Luxe.loadJSON("assets/ui/play_ui_scene2_components.json", function(j) {

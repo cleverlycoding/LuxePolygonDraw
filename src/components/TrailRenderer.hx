@@ -10,7 +10,7 @@ import luxe.Color;
 import luxe.utils.Maths;
 import luxe.Visual;
 
-using ledoux.UtilityBelt.VectorExtender;
+using utilities.VectorExtender;
 
 class TrailRenderer extends EditorComponent {
 

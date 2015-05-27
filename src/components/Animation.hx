@@ -6,9 +6,8 @@ import luxe.Color;
 
 import animation.Bone;
 
-using ledoux.UtilityBelt.TransformExtender;
-using ledoux.UtilityBelt.VectorExtender;
-
+using utilities.TransformExtender;
+using utilities.VectorExtender;
 
 /*
 typedef VertexBoneMapping = {

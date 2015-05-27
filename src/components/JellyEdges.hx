@@ -11,8 +11,8 @@ import Polygon;
 import components.PolygonCollider;
 import components.PolygonCollider.PolygonCollision;
 
-using ledoux.UtilityBelt.VectorExtender;
-using ledoux.UtilityBelt.PolylineExtender;
+using utilities.VectorExtender;
+using utilities.PolylineExtender;
 
 class JellyEdges extends EditorComponent {
 

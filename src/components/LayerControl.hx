@@ -14,7 +14,7 @@ import luxe.utils.Maths;
 import luxe.collision.Collision;
 import luxe.collision.shapes.Polygon in CollisionPoly;
 
-using ledoux.UtilityBelt.VectorExtender;
+using utilities.VectorExtender;
 
 class LayerControl extends EditorComponent {
 

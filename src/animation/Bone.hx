@@ -15,9 +15,9 @@ import luxe.tween.actuators.SimpleActuator;
 import luxe.tween.actuators.MotionPathActuator;
 import luxe.tween.actuators.GenericActuator;
 
-using ledoux.UtilityBelt.TransformExtender;
-using ledoux.UtilityBelt.VectorExtender;
-using ledoux.UtilityBelt.PolylineExtender;
+using utilities.TransformExtender;
+using utilities.VectorExtender;
+using utilities.PolylineExtender;
 
 using Lambda;
 

@@ -6,7 +6,7 @@ import luxe.collision.Collision;
 import luxe.collision.CollisionData;
 import luxe.collision.shapes.Polygon in PolygonCollisionShape;
 
-using ledoux.UtilityBelt.PolylineExtender;
+using utilities.PolylineExtender;
 
 //debug
 import luxe.collision.ShapeDrawerLuxe;
