@@ -56,7 +56,7 @@ class LayerControl extends EditorComponent {
 	}
 
 	override function update(dt : Float) {
-		var numLayers = Main.instance.layers.getNumLayers();
+		var numLayers = Main.instance.layers.length;
 
 		var i = 0;
 
@@ -82,12 +82,32 @@ class LayerControl extends EditorComponent {
 
 			i++;
 		}
+
+		if (Main.instance.layers != Main.instance.rootLayers) {
+			Luxe.draw.circle({
+				x: bounds.x + bounds.w/2 - 15,
+				y: bounds.y - 20,
+				r: 15,
+				immediate: true,
+				color: new Color(1,1,0),
+				depth: 1000,
+				batcher: Main.instance.uiSceneBatcher
+			});
+		}
 	}
 
 	override function onmousedown(e : MouseEvent) {
 
 		if (e.pos.distance(groupHandle.pos) < 15) {
-			isGrouping = true;
+			if (Main.instance.curPoly().children.length > 0) {
+				unGroup(Main.instance.curPoly());
+			}
+			else {
+				isGrouping = true;
+			}
+		}
+		else if (e.pos.distance(enterGroupHandle.pos) < 15 && Main.instance.curPoly().children.length > 0) {
+			editGroup(Main.instance.curPoly());
 		}
 		if ( Collision.pointInPoly(e.pos, polygon.getRectCollisionBounds()) ) {
 			selectLayerWithCursor(e.pos.y);
@@ -112,7 +132,6 @@ class LayerControl extends EditorComponent {
 
 	override function onmouseup(e : MouseEvent) {
 		if (isMovingLayer && e.pos.y > bounds.y + bounds.h) {
-			trace("delete layer");
 			var curP = Main.instance.curPoly();
 			Edit.RemoveLayer(Main.instance.layers, 0);
 		}
@@ -125,13 +144,46 @@ class LayerControl extends EditorComponent {
 		isGrouping = false;
 	}
 
+	function editGroup(parent : Polygon) {
+		Main.instance.layers = parent.getChildrenAsPolys();
+		Main.instance.curLayer = 0;
+	}
+
+	//BUGGY AS FUCK
+	//NOTE: THIS MIGHT NOT WORK FOR DEEP LAYERS
+	function unGroup(parent : Polygon) {
+		//keep track of layer indices
+		var i = Main.instance.curLayer;
+		var tmpParentPos = parent.pos.clone();
+
+		//remove parent
+		Edit.RemoveLayer(Main.instance.layers, i);
+
+		//remove children from parent and keep a list of the polygons
+		var polyList : Array<Polygon> = [];
+		for (c in parent.children) {
+			var p = cast(c, Polygon);
+			polyList.push(p);
+		}
+
+		//add polygons to parent's layer and re-adjust their transforms to new coord system
+		for (p in polyList) {
+			p.parent = parent.parent;
+			Edit.AddLayer(Main.instance.layers, p, i);
+			p.pos.add(tmpParentPos);
+			i++;
+		}
+
+		Main.instance.switchLayerSelection(i-1);
+	}
+
 	function mergeGroup() {
 
 		var groupLayer = cast(Math.min(closestLayerToGroupHandle, Main.instance.curLayer), Int);
 
 		var polysInGroup = [];
 		var i = 0;
-		for (l in Main.instance.layers.layers) {
+		for (l in Main.instance.layers) {
 
 			var isSelectedGroup = ( i == Main.instance.curLayer || 
 									((closestLayerToGroupHandle > Main.instance.curLayer 
@@ -151,13 +203,13 @@ class LayerControl extends EditorComponent {
         var parentPoly = new Polygon({}, []);
 
 		for (childPoly in polysInGroup) {
-			Main.instance.layers.removeLayer(childPoly);
+			Main.instance.layers.remove(childPoly);
 			childPoly.parent = parentPoly;
 		}
 
 		parentPoly.recenter();
 
-		Main.instance.layers.addLayer(parentPoly, groupLayer);
+		Main.instance.layers.insert(groupLayer, parentPoly);
 
 		Main.instance.switchLayerSelection(groupLayer);
 	}
@@ -255,12 +307,21 @@ class LayerControl extends EditorComponent {
 
 		groupHandle.pos.y = heights[closestLayer];
 		enterGroupHandle.pos.y = heights[closestLayer];
+
+		if (Main.instance.curPoly().children.length > 0) {
+			enterGroupHandle.color = new Color(1,0,1);
+			groupHandle.color = new Color(1,0,0);
+		}
+		else {
+			enterGroupHandle.color = new Color(0,0,0);
+			groupHandle.color = new Color(0,1,0);
+		}
 	}
 
 	//from lowest to highest
 	function layerLineHeights() : Array<Float> {
 		var heights : Array<Float> = [];
-		var numLayers = Main.instance.layers.getNumLayers();
+		var numLayers = Main.instance.layers.length;
 		for (i in 0 ... numLayers) {
 			var curH = bounds.y + (bounds.h * ( 1 - ((i+1) / (numLayers+1)) ) );
 			heights.push(curH);

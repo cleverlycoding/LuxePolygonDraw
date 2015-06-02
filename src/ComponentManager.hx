@@ -122,12 +122,15 @@ class ComponentManager {
 		for (entry in componentData) {
 			var e = scene.entities.get(entry.name);
 			trace(e);
+			
 			if (e != null) {
 				for (c in entry.components) {
+					trace("c " + c.name);
 					var newComponent:Component = Type.createInstance(Type.resolveClass("components." + c.name), [c]);
 					e.add(newComponent);
 				}
 			}
+			
 		}
 	}
 

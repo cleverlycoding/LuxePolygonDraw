@@ -2,7 +2,9 @@ import luxe.Visual;
 import luxe.Color;
 import phoenix.Batcher;
 
-import LayerManager;
+//import LayerManager;
+
+using utilities.PolygonGroupExtender;
 
 class Edit {
 	public static var doneList:Array<Edit> = [];
@@ -41,16 +43,16 @@ class Edit {
 		}
 	}
 
-	public static function AddLayer(layerManager, layer, index) {
-		return new AddLayerEdit(layerManager, layer, index);
+	public static function AddLayer(layerList, layer, index) {
+		return new AddLayerEdit(layerList, layer, index);
 	}
 
-	public static function RemoveLayer(layerManager, index) {
-		return new RemoveLayerEdit(layerManager, index);
+	public static function RemoveLayer(layerList, index) {
+		return new RemoveLayerEdit(layerList, index);
 	}
 
-	public static function MoveLayer(layerManager, index, dir) {
-		return new MoveLayerEdit(layerManager, index, dir);
+	public static function MoveLayer(layerList, index, dir) {
+		return new MoveLayerEdit(layerList, index, dir);
 	}
 
 	public static function ChangeColor(layer, color) {
@@ -59,12 +61,13 @@ class Edit {
 }
 
 class AddLayerEdit extends Edit {
-	var layerManager:LayerManager;
-	var layer:Visual;
+	//var layerManager:LayerManager;
+	var layerList:Array<Polygon>;
+	var layer:Polygon;
 	var layerIndex:Int;
 
-	override public function new (layerManager:LayerManager, layer:Visual, layerIndex:Int) {
-		this.layerManager = layerManager;
+	override public function new (layerList:Array<Polygon>, layer:Polygon, layerIndex:Int) {
+		this.layerList = layerList;
 		this.layer = layer;
 		this.layerIndex = layerIndex;
 
@@ -74,27 +77,30 @@ class AddLayerEdit extends Edit {
 	override public function redo() {	
 		super.redo();
 
-		layerManager.addLayer(layer, layerIndex);
+		//layerManager.addLayer(layer, layerIndex);
+		layerList.insert(layerIndex, layer);
 		Luxe.renderer.batcher.add(layer.geometry);
 	}
 
 	override public function undo() {
 		super.undo();
 
-		layerManager.removeLayer(layer);
+		//layerManager.removeLayer(layer);
+		layerList.remove(layer);
 		Luxe.renderer.batcher.remove(layer.geometry);
 	}
 }
 
 class RemoveLayerEdit extends Edit {
-	var layerManager:LayerManager;
-	var layer:Visual;
+	//var layerManager:LayerManager;
+	var layerList:Array<Polygon>;
+	var layer:Polygon;
 	var layerIndex:Int;
 	var batcher: Batcher;
 
-	override public function new (layerManager:LayerManager, layerIndex:Int) {
-		this.layerManager = layerManager;
-		this.layer = layerManager.getLayer(layerIndex);
+	override public function new (layerList:Array<Polygon>, layerIndex:Int) {
+		this.layerList = layerList;
+		this.layer = layerList[layerIndex]; //layerManager.getLayer(layerIndex);
 		this.layerIndex = layerIndex;
 		this.batcher = this.layer.geometry.batchers[0];
 
@@ -104,7 +110,8 @@ class RemoveLayerEdit extends Edit {
 	override public function redo() {	
 		super.redo();
 
-		layerManager.removeLayer(layer);
+		//layerManager.removeLayer(layer);
+		layerList.remove(layer);
 		batcher.remove(layer.geometry);
 		//remove children too (is this really the right place for this???)
 		for (c in layer.children) {
@@ -115,7 +122,8 @@ class RemoveLayerEdit extends Edit {
 	override public function undo() {
 		super.undo();
 
-		layerManager.addLayer(layer, layerIndex-1);
+		//layerManager.addLayer(layer, layerIndex-1);
+		layerList.insert(layerIndex-1, layer);
 		batcher.add(layer.geometry);
 		//add children here?
 		for (c in layer.children) {
@@ -125,14 +133,15 @@ class RemoveLayerEdit extends Edit {
 }
 
 class MoveLayerEdit extends Edit {
-	var layerManager:LayerManager;
-	var layer:Visual;
+	//var layerManager:LayerManager;
+	var layerList:Array<Polygon>;
+	var layer:Polygon;
 	var startIndex:Int;
 	var endIndex:Int;
 
-	override public function new (layerManager:LayerManager, layerIndex:Int, dir:Int) {
-		this.layerManager = layerManager;
-		this.layer = layerManager.getLayer(layerIndex);
+	override public function new (layerList:Array<Polygon>, layerIndex:Int, dir:Int) {
+		this.layerList = layerList;
+		this.layer = layerList[layerIndex]; //layerManager.getLayer(layerIndex);
 		this.startIndex = layerIndex;
 		this.endIndex = layerIndex + dir;
 
@@ -142,22 +151,26 @@ class MoveLayerEdit extends Edit {
 	override public function redo() {	
 		super.redo();
 
-		layerManager.swapLayers(startIndex, endIndex);
+		//layerManager.swapLayers(startIndex, endIndex);
+		layerList.swap(startIndex, endIndex);
+		layerList.setDepths(0,1);
 	}
 
 	override public function undo() {
 		super.undo();
 
-		layerManager.swapLayers(endIndex, startIndex);
+		//layerManager.swapLayers(endIndex, startIndex);
+		layerList.swap(endIndex, startIndex);
+		layerList.setDepths(0,1);
 	}
 }
 
 class ChangeColorEdit extends Edit {
-	var layer:Visual;
+	var layer:Polygon;
 	var c1:Color;
 	var c2:Color;
 
-	override public function new (layer:Visual, newColor:Color) {
+	override public function new (layer:Polygon, newColor:Color) {
 		this.layer = layer;
 		this.c1 = layer.color.clone();
 		this.c2 = newColor.clone();

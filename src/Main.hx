@@ -27,17 +27,9 @@ import sys.io.File;
 import sys.io.FileOutput;
 import sys.io.FileInput;
 
-
 //ARL
-/*
-import Polyline;
-import Polygon;
-import ColorPicker;
-import Slider;
-import Edit;
-import LayerManager;
-*/
 import animation.Bone;
+
 import components.Animation;
 import components.PuppetAnimation;
 
@@ -58,7 +50,9 @@ class Main extends luxe.Game {
 	public var isDrawing : Bool;
 
 	//layers
-	public var layers = new LayerManager(0, 1, 1000);
+	//public var layers = new LayerManager(0, 1, 1000);
+    public var rootLayers : Array<Polygon> = [];
+    public var layers : Array<Polygon>;// = [];
 	var aboveLayersDepth = 10001;
 	public var curLayer = 0;
 	public var selectedLayerOutline : Polyline;
@@ -104,6 +98,9 @@ class Main extends luxe.Game {
 
     override function ready() {
         instance = this;
+
+        //start current layers on root list
+        layers = rootLayers;
 
         trace(Luxe.screen.size);
         trace(Luxe.camera.center);
@@ -239,6 +236,8 @@ class Main extends luxe.Game {
 
 
         //// NEW UI FROM JSON
+
+        
         uiScene = new Scene("uiScene");
         uiSceneCamera = new Camera({name:"uiSceneCamera", scene: uiScene});
         uiSceneBatcher = Luxe.renderer.create_batcher({name: "uiSceneBatcher", layer: 11, camera: uiSceneCamera.view});
@@ -257,6 +256,7 @@ class Main extends luxe.Game {
         });
         
 
+        /*
         playModeUIScene = new Scene("playModeUIScene");
         playModeUICamera = new Camera({name:"playModeUICamera", scene: playModeUIScene});
         playModeUIBatcher = Luxe.renderer.create_batcher({name: "playModeUIBatcher", layer: 11, camera: playModeUICamera.view});
@@ -273,6 +273,8 @@ class Main extends luxe.Game {
             });
 
         });
+        */
+        
         
     }
 
@@ -300,6 +302,7 @@ class Main extends luxe.Game {
 
     //COMBINE THESE TWO FUNCTION OBVIOUSLY \/\/\/\/
     public function switchLayerSelection(dir:Int) {
+        /*
     	curLayer += dir;
 
     	if (curLayer < 0) curLayer = 0;
@@ -320,13 +323,36 @@ class Main extends luxe.Game {
     	else {
 	    	selectedLayerOutline.setPoints([]);
     	}
+        */
+
+
+        curLayer += dir;
+
+        if (curLayer < 0) curLayer = 0;
+        if (curLayer >= layers.length) curLayer = layers.length - 1;
+
+        if (layers.length > 0) {    
+            var poly : Polygon = layers[curLayer]; //cast(layers.getLayer(curLayer), Polygon);
+
+            //close loop
+            var loop = poly.getPoints();
+            var start = loop[0];
+            loop.push(start);
+
+            selectedLayerOutline.setPoints(loop);
+
+            polyCollision = poly.collisionBounds();
+        }
+        else {
+            selectedLayerOutline.setPoints([]);
+        }
     }
 
     public function goToLayer(index:Int) {
-        if (layers.getNumLayers() > 0) {
+        if (layers.length > 0) {
             curLayer = index;
 
-            var poly : Polygon = cast(layers.getLayer(curLayer), Polygon);
+            var poly : Polygon = layers[curLayer];
 
             //close loop
             var loop = poly.getPoints();
@@ -376,7 +402,8 @@ class Main extends luxe.Game {
     public function layerDrag(mousePos) {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
 
-        var poly = cast(layers.getLayer(curLayer), Polygon);
+        //var poly = cast(layers.getLayer(curLayer), Polygon);\
+        var poly = layers[curLayer];
 
         var drag = Vector.Subtract(mousePos, dragMouseStartPos);
         
@@ -434,7 +461,16 @@ class Main extends luxe.Game {
     public function deleteLayerInput(e:KeyEvent) {
         if (e.keycode == Key.key_p) {  
             //Delete selected layer
+
+            /*
             if (layers.getNumLayers() > 0) {    
+                Edit.RemoveLayer(layers, curLayer);
+                switchLayerSelection(-1);
+            }
+            */
+
+
+            if (layers.length > 0) {    
                 Edit.RemoveLayer(layers, curLayer);
                 switchLayerSelection(-1);
             }
@@ -442,9 +478,19 @@ class Main extends luxe.Game {
     }
 
     public function duplicateLayerInput(e:KeyEvent) {
+        /*
         if (e.keycode == Key.key_d) {
             if (layers.getNumLayers() > 0) {    
                 var layerDupe = new Polygon({}, [], cast(layers.getLayer(curLayer), Polygon).jsonRepresentation());
+                layerDupe.transform.pos.add(new Vector(10,10));
+                Edit.AddLayer(layers, layerDupe, curLayer);
+                switchLayerSelection(1);
+            }
+        }
+        */
+        if (e.keycode == Key.key_d) {
+            if (layers.length > 0) {    
+                var layerDupe = new Polygon({}, [], layers[curLayer].jsonRepresentation());
                 layerDupe.transform.pos.add(new Vector(10,10));
                 Edit.AddLayer(layers, layerDupe, curLayer);
                 switchLayerSelection(1);
@@ -462,7 +508,7 @@ class Main extends luxe.Game {
         }
         else if (e.keycode == Key.key_w) {
             //Move selected layer up the stack
-            if (curLayer < layers.getNumLayers() - 1) {
+            if (curLayer < layers.length - 1) {
                 Edit.MoveLayer(layers, curLayer, 1);    
                 switchLayerSelection(1);
             }
@@ -483,7 +529,7 @@ class Main extends luxe.Game {
     public function colorDropperInput(e:KeyEvent) {
         if (e.keycode == Key.key_m) {
             //pick up color
-            var tmp = layers.getLayer(curLayer).color.clone().toColorHSV();
+            var tmp = layers[curLayer].color.clone().toColorHSV(); //layers.getLayer(curLayer).color.clone().toColorHSV();
             picker.pickedColor = tmp;
             slider.value = tmp.v;
 
@@ -492,7 +538,8 @@ class Main extends luxe.Game {
         else if (e.keycode == Key.key_n) {
             //drop color
             //layers.getLayer(curLayer).color = picker.pickedColor.clone();
-            Edit.ChangeColor(layers.getLayer(curLayer), picker.pickedColor.clone());
+            //Edit.ChangeColor(layers.getLayer(curLayer), picker.pickedColor.clone());
+            Edit.ChangeColor(layers[curLayer], picker.pickedColor.clone());
         }
     }
 
@@ -879,7 +926,7 @@ class Main extends luxe.Game {
     }
 
     public function curPoly() : Polygon {
-        return cast(layers.getLayer(curLayer), Polygon);
+        return layers[curLayer]; //cast(layers.getLayer(curLayer), Polygon);
     }
 
     public function enterPlayMode() {
@@ -1606,8 +1653,9 @@ class GroupState extends State {
             );
 
             //detect collisions between highlighted area and polygongs
-            for (v in main.layers.layers) {
-                var poly = cast(v, Polygon);
+            for (v in main.layers) { //main.layers.layers) {
+                //var poly = cast(v, Polygon);
+                var poly = v;
                 if (Collision.test(groupCollisionArea, poly.collisionBounds()) != null) {
                     polysInGroup.push(poly);
                 }
@@ -1627,13 +1675,17 @@ class GroupState extends State {
                 */
 
                 for (childPoly in polysInGroup) {
-                    main.layers.removeLayer(childPoly);
+                    //main.layers.removeLayer(childPoly);
+                    main.layers.remove(childPoly);
                     childPoly.parent = parentPoly;
                 }
 
                 parentPoly.recenter();
 
-                main.layers.addLayer(parentPoly);
+                //main.layers.addLayer(parentPoly);
+                main.layers.push(parentPoly);
+
+                main.layers.setDepths(0,1);
             }
         }
     }

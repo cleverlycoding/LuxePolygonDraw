@@ -35,6 +35,8 @@ class Polygon extends Visual {
 
 
 		if (jsonObj != null) {
+			trace("hi!");
+
 			if (jsonObj.name != null) {
 				_options.scene.remove(this);
 				name = jsonObj.name;
@@ -279,5 +281,13 @@ class Polygon extends Visual {
 
 	function listen_x(change : Float) : Void {
 		trace("pos change " + change);
+	}
+
+	public function getChildrenAsPolys() : Array<Polygon> {
+		var polyList : Array<Polygon> = [];
+		for (c in children) {
+			polyList.push(cast(c, Polygon));
+		}
+		return polyList;
 	}
 }
