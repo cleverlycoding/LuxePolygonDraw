@@ -79,7 +79,7 @@ class Polygon extends Visual {
 		
 	}
 
-	function generateMesh() {
+	public function generateMesh() {
 		//clear geometry (super INEFFICIENT (probably))
 		var curBatcher = geometry.batchers[0]; //get current batcher?
 
@@ -178,6 +178,7 @@ class Polygon extends Visual {
 		return cp;
 	}
 
+	//REPLACE THIS WITH set_points ???
 	public function setPoints(points:Array<Vector>) {
 		this.points = points;
 		transform.pos = new Vector(0,0);
@@ -185,7 +186,6 @@ class Polygon extends Visual {
 		generateMesh(); //regenerate mesh whenever you change the number of points
 	}
 
-	//REPLACE THIS WITH set_points ???
 	public function getPoints(): Array<Vector> {
 		//NOW INCLUDING ALL POINTS FROM CHILDREN - WHAT COULD GO WRONG????
 		var worldPoints = [];
@@ -250,6 +250,25 @@ class Polygon extends Visual {
 			var p = cast(child, Polygon);
 			p.pos = p.pos.toLocalSpace(transform);
 		}
+	}
+
+	//another attempt at the recent function, basically
+	//see vertexDrag() in Main for a use case
+	public function recenterLocally() {
+		//var c = points.polylineCenter();
+
+		var worldPoints = points.toWorldSpace(transform);
+		var c = worldPoints.polylineCenter();
+		
+		if (transform.parent != null) {
+			transform.pos = c.toLocalSpace(parent.transform);
+		}
+		else {
+			transform.pos = c;
+		}	
+		//transform.pos.add(c);
+
+		points = worldPoints.toLocalSpace(transform);
 	}
 
 	public function collisionBounds() : CollisionPoly {

@@ -10,6 +10,7 @@ import luxe.Visual;
 import phoenix.geometry.RectangleGeometry;
 import phoenix.geometry.CircleGeometry;
 import luxe.utils.Maths;
+import phoenix.Transform;
 
 import luxe.collision.Collision;
 import luxe.collision.shapes.Polygon in CollisionPoly;
@@ -31,6 +32,9 @@ class LayerControl extends EditorComponent {
 
 	var closestLayerToGroupHandle : Int;
 
+	var prevSelectedLayer : Int;
+	var prevNumlayers : Int;
+
 	override function init() {
 		polygon = cast entity;
 		bounds = polygon.getRectBounds();
@@ -39,20 +43,24 @@ class LayerControl extends EditorComponent {
 		groupHandle = new Visual({
 			pos: new Vector(bounds.x - 15, bounds.y),
 			color: new Color(0,1,0),
-			batcher: Main.instance.uiSceneBatcher,
 			depth: 2000,
 			immediate: false,
 			geometry: Luxe.draw.circle({r:10})
 		});
+		//why is this hack necessary?
+		Luxe.renderer.batcher.remove(groupHandle.geometry);
+		Main.instance.uiSceneBatcher.add(groupHandle.geometry);
 
 		enterGroupHandle = new Visual({
 			pos: new Vector(bounds.x + bounds.w + 110, bounds.y),
 			color: new Color(1,0,1),
-			batcher: Main.instance.uiSceneBatcher,
 			depth: 2000,
 			immediate: false,
 			geometry: Luxe.draw.circle({r:15})
 		});
+		//why is this hack necessary?
+		Luxe.renderer.batcher.remove(enterGroupHandle.geometry);
+		Main.instance.uiSceneBatcher.add(enterGroupHandle.geometry);
 	}
 
 	override function update(dt : Float) {
@@ -94,6 +102,13 @@ class LayerControl extends EditorComponent {
 				batcher: Main.instance.uiSceneBatcher
 			});
 		}
+
+		if (Main.instance.layers.length > 0 && (prevSelectedLayer != Main.instance.curLayer || prevNumlayers != numLayers)) {
+			updateSelectedLayerHandles();
+		} 
+
+		prevSelectedLayer = Main.instance.curLayer;
+		prevNumlayers = numLayers;
 	}
 
 	override function onmousedown(e : MouseEvent) {
@@ -108,6 +123,10 @@ class LayerControl extends EditorComponent {
 		}
 		else if (e.pos.distance(enterGroupHandle.pos) < 15 && Main.instance.curPoly().children.length > 0) {
 			editGroup(Main.instance.curPoly());
+		}
+		else if (e.pos.distance(new Vector(bounds.x + bounds.w/2 - 15, bounds.y - 20)) < 15 && 
+			Main.instance.layers != Main.instance.rootLayers) {
+			exitCurrentGroup();
 		}
 		if ( Collision.pointInPoly(e.pos, polygon.getRectCollisionBounds()) ) {
 			selectLayerWithCursor(e.pos.y);
@@ -144,9 +163,29 @@ class LayerControl extends EditorComponent {
 		isGrouping = false;
 	}
 
+	function exitCurrentGroup() {
+		if (Main.instance.layers[0].parent.parent != null) {
+			var newParent = cast(Main.instance.layers[0].parent.parent, Polygon);
+			Main.instance.layers = newParent.getChildrenAsPolys();
+			Main.instance.localSpace = newParent.transform;
+		}
+		else {
+			Main.instance.layers = Main.instance.rootLayers;
+			//Main.instance.localSpace = null;
+			Main.instance.localSpace = new Transform(); 
+			//this is kind of a crappy hack - should I have a global root polygon??
+			//or do I need to restructure groups so they don't use empty polygons as containers???
+		}
+
+		updateSelectedLayerHandles();
+	}
+
 	function editGroup(parent : Polygon) {
 		Main.instance.layers = parent.getChildrenAsPolys();
+		Main.instance.localSpace = parent.transform;
 		Main.instance.curLayer = 0;
+
+		updateSelectedLayerHandles();
 	}
 
 	//BUGGY AS FUCK
@@ -175,6 +214,8 @@ class LayerControl extends EditorComponent {
 		}
 
 		Main.instance.switchLayerSelection(i-1);
+
+		updateSelectedLayerHandles();
 	}
 
 	function mergeGroup() {
@@ -212,6 +253,8 @@ class LayerControl extends EditorComponent {
 		Main.instance.layers.insert(groupLayer, parentPoly);
 
 		Main.instance.switchLayerSelection(groupLayer);
+
+		updateSelectedLayerHandles();
 	}
 
 	function moveGroupingSelector(cursorHeight:Float) {
@@ -228,13 +271,7 @@ class LayerControl extends EditorComponent {
 		var closestLayer = findClosestLayer(clampedHeight);
 		if (closestLayer != Main.instance.curLayer) {
 			
-			//THIS DIDN'T WORK (ok, it sorta works --- why???)
-			/*
-			var curP = Main.instance.curPoly();
-			Main.instance.layers.removeLayer(curP);
-			Main.instance.layers.addLayer(curP, closestLayer);
-			*/
-
+			//this works but it's ugly
 			var curP = Main.instance.curPoly();
 			if (Main.instance.curLayer < closestLayer) {
 				while (Main.instance.curLayer != closestLayer) {
@@ -250,6 +287,12 @@ class LayerControl extends EditorComponent {
 			}
 			
 
+			//THIS DIDN'T WORK (ok, it sorta works --- why???)
+			/*
+			var curP = Main.instance.curPoly();
+			Main.instance.layers.removeLayer(curP);
+			Main.instance.layers.addLayer(curP, closestLayer);
+			*/
 
 
 			//THIS CAUSES BUGS IF YOU MOVE THE LAYER TOO FAST
@@ -284,6 +327,7 @@ class LayerControl extends EditorComponent {
 		//SELECT LAYER
 		Main.instance.goToLayer(closestLayer);
 
+		/*
 		//CREATE THUMBNAIL
 		if (thumbnailPoly != null) {
 
@@ -304,6 +348,61 @@ class LayerControl extends EditorComponent {
 
 		var scaleRatio = thumbnailPoly.getRectBounds().w / thumbWidth;
 		thumbnailPoly.scale = thumbnailPoly.scale.divideScalar(scaleRatio);
+
+		groupHandle.pos.y = heights[closestLayer];
+		enterGroupHandle.pos.y = heights[closestLayer];
+
+		if (Main.instance.curPoly().children.length > 0) {
+			enterGroupHandle.color = new Color(1,0,1);
+			groupHandle.color = new Color(1,0,0);
+		}
+		else {
+			enterGroupHandle.color = new Color(0,0,0);
+			groupHandle.color = new Color(0,1,0);
+		}
+		*/
+	}
+
+	function updateSelectedLayerHandles() {
+		var closestLayer = Main.instance.curLayer;
+		var heights = layerLineHeights();
+
+		//CREATE THUMBNAIL
+		if (thumbnailPoly != null) {
+
+			//THIS NEEDS TO BE REFACTORED BRO
+			Main.instance.uiSceneBatcher.remove(thumbnailPoly.geometry);
+			for (c in thumbnailPoly.children) {
+				Main.instance.uiSceneBatcher.remove( cast(c, Visual).geometry );
+			}
+		}
+
+		var thumbWidth = 100;
+		var thumbHeight = 100;
+		thumbnailPoly = new Polygon({batcher: Main.instance.uiSceneBatcher, depth: 2000}, [],
+										Main.instance.curPoly().jsonRepresentation());
+
+		thumbnailPoly.pos.y = heights[closestLayer];
+		thumbnailPoly.pos.x = bounds.x + bounds.w + thumbWidth/2;
+
+		if (thumbnailPoly.getRectBounds().w > thumbnailPoly.getRectBounds().h) {
+			var scaleRatio = thumbnailPoly.getRectBounds().w / thumbWidth;
+			thumbnailPoly.scale = thumbnailPoly.scale.divideScalar(scaleRatio);
+		}
+		else {
+			var scaleRatio = thumbnailPoly.getRectBounds().h / thumbHeight;
+			thumbnailPoly.scale = thumbnailPoly.scale.divideScalar(scaleRatio);
+		}
+
+		if (thumbnailPoly.getRectBounds().w > thumbWidth) {
+			var scaleRatio = thumbnailPoly.getRectBounds().w / thumbWidth;
+			thumbnailPoly.scale = thumbnailPoly.scale.divideScalar(scaleRatio);
+		}
+
+		if (thumbnailPoly.getRectBounds().h > thumbHeight) {
+			var scaleRatio = thumbnailPoly.getRectBounds().h / thumbHeight;
+			thumbnailPoly.scale = thumbnailPoly.scale.divideScalar(scaleRatio);
+		}
 
 		groupHandle.pos.y = heights[closestLayer];
 		enterGroupHandle.pos.y = heights[closestLayer];

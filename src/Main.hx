@@ -7,6 +7,7 @@ import luxe.Vector;
 import luxe.utils.Maths;
 import phoenix.geometry.*;
 import phoenix.Batcher;
+import phoenix.Transform;
 import luxe.States;
 
 import luxe.collision.Collision;
@@ -56,6 +57,7 @@ class Main extends luxe.Game {
 	var aboveLayersDepth = 10001;
 	public var curLayer = 0;
 	public var selectedLayerOutline : Polyline;
+    public var localSpace : Transform;
 
 	//color picker
 	public var picker : ColorPicker;
@@ -101,6 +103,7 @@ class Main extends luxe.Game {
 
         //start current layers on root list
         layers = rootLayers;
+        localSpace = null;
 
         trace(Luxe.screen.size);
         trace(Luxe.camera.center);
@@ -399,16 +402,25 @@ class Main extends luxe.Game {
         return false;
     }
 
+    //TODO: fix the mouse being "stuck" to the center of the polygon
     public function layerDrag(mousePos) {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
 
-        //var poly = cast(layers.getLayer(curLayer), Polygon);\
+        //var poly = cast(layers.getLayer(curLayer), Polygon);
         var poly = layers[curLayer];
 
+        /*
         var drag = Vector.Subtract(mousePos, dragMouseStartPos);
+        trace(drag);
+        if (localSpace != null) drag = localSpace.worldVectorToLocalSpace(drag);
+        trace(drag);
         
         //poly.transform.pos.add(drag);
         poly.pos.add(drag);
+        */
+
+        if (localSpace != null) mousePos = localSpace.worldVectorToLocalSpace(mousePos);
+        poly.pos = mousePos;
 
         dragMouseStartPos = mousePos;
 
@@ -683,11 +695,13 @@ class Main extends luxe.Game {
     public function drawRotationHandle() {
 
         var p = curPoly();
+        var pos = p.transform.pos;
+        if (localSpace != null) pos = localSpace.localVectorToWorldSpace(pos);
         var b = p.getRectBounds();
-        var handlePos = Vector.Subtract( p.transform.pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
+        var handlePos = Vector.Subtract( pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
 
         Luxe.draw.line({
-            p0 : curPoly().transform.pos,
+            p0 : pos,
             p1 : handlePos,
             color : new Color(255,0,255),
             depth : aboveLayersDepth,
@@ -707,9 +721,12 @@ class Main extends luxe.Game {
     public function startRotationDrag(mousePos : Vector) : Bool {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
 
+        //TURN THIS INTO A FUNCTION or something
         var p = curPoly();
+        var pos = p.transform.pos;
+        if (localSpace != null) pos = localSpace.localVectorToWorldSpace(pos);
         var b = p.getRectBounds();
-        var handlePos = Vector.Subtract( p.transform.pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
+        var handlePos = Vector.Subtract( pos, curPoly().transform.up().multiplyScalar(b.h * 0.7) );
 
         if (mousePos.distance(handlePos) < (15 / Luxe.camera.zoom)) {
             return true;
@@ -722,30 +739,36 @@ class Main extends luxe.Game {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
 
         var p = curPoly();
+        var pos = p.transform.pos;
+        if (localSpace != null) pos = localSpace.localVectorToWorldSpace(pos);
 
-        var rotationDir = Vector.Subtract(mousePos, p.transform.pos);
+        var rotationDir = Vector.Subtract(mousePos, pos);
         p.rotation_z = Maths.degrees(rotationDir.angle2D) - 90 - (p.transform.scale.y > 0 ? 180 : 0); // - 270;
+        if (localSpace != null) p.rotation_z -= localSpace.getRotationZ();
 
         switchLayerSelection(0);
     }
 
     function scaleHandles() {
         var p = curPoly();
+        var pos = p.transform.pos;
+        if (localSpace != null) pos = localSpace.localVectorToWorldSpace(pos);
+
         var b = p.getRectBounds();
 
-        var upPos = Vector.Add( p.transform.pos, p.transform.up().multiplyScalar(b.h * 0.7 /* * 0.5 */ /* * 0.7 */) );
-        var rightPos = Vector.Add( p.transform.pos, p.transform.right().multiplyScalar(b.w * 0.7 /* * 0.5 */ /* * 0.7 */) );
+        var upPos = Vector.Add( pos, p.transform.up().multiplyScalar(b.h * 0.7 /* * 0.5 */ /* * 0.7 */) );
+        var rightPos = Vector.Add( pos, p.transform.right().multiplyScalar(b.w * 0.7 /* * 0.5 */ /* * 0.7 */) );
 
         var handleSize = 10 / Luxe.camera.zoom;
 
-        return {size: handleSize, up: upPos, right: rightPos};
+        return {size: handleSize, up: upPos, right: rightPos, origin: pos};
     }
 
     public function drawScaleHandles() {
         var handles = scaleHandles();
 
         Luxe.draw.line({
-            p0 : curPoly().transform.pos,
+            p0 : handles.origin,
             p1 : handles.up,
             color : new Color(0,255,0),
             depth : aboveLayersDepth,
@@ -763,7 +786,7 @@ class Main extends luxe.Game {
         });
 
         Luxe.draw.line({
-            p0 : curPoly().transform.pos,
+            p0 : handles.origin,
             p1 : handles.right,
             color : new Color(255,0,0),
             depth : aboveLayersDepth,
@@ -884,7 +907,7 @@ class Main extends luxe.Game {
     }
 
     public function startVertexDrag(mousePos) : Bool {
-        if (!areVerticesTooCloseToHandle()) {  
+        if (!areVerticesTooCloseToHandle()) {  //NOTE: //this is where grouped-polygons get disqualified
             selectedVertex = collisionWithVertexHandle(mousePos);
 
             if (selectedVertex > -1) {
@@ -898,6 +921,23 @@ class Main extends luxe.Game {
     public function vertexDrag(mousePos) {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
 
+        //if (localSpace != null) mousePos = localSpace.worldVectorToLocalSpace(mousePos);
+        mousePos = curPoly().transform.worldVectorToLocalSpace(mousePos);
+
+        /*
+        var points = curPoly().getPoints();
+        points[selectedVertex] = mousePos.clone();
+        switchLayerSelection(0);
+        */
+
+        layers[curLayer].points[selectedVertex] = mousePos.clone();
+        layers[curLayer].recenterLocally();
+        layers[curLayer].generateMesh();
+        switchLayerSelection(0);
+
+        //curPoly().setPoints(points);
+
+        /*
         var drag = Vector.Subtract(mousePos, dragMouseStartPos);
 
         var points = curPoly().getPoints();
@@ -907,9 +947,11 @@ class Main extends luxe.Game {
         curPoly().setPoints(points);
 
         dragMouseStartPos = mousePos;
+        */
     }
 
     function areVerticesTooCloseToHandle() {
+        if (curPoly().points.length == 0) return true; //don't manipulate child's vertices
         var points = curPoly().getPoints();
         for (i in 0 ... points.length-1) {
             var p1 = points[i];

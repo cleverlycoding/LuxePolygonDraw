@@ -50,6 +50,10 @@ class TransformExtender {
 		t.rotation = rot;
 	}
 
+	static public function getRotationZ(t:Transform) : Float {
+		return t.rotation.toeuler().z;
+	}
+
 	/*
 	static public function convertToLocalScale(t:Transform, scale:Vector) : Vector {
 		var localScale = scale.clone().divide(t.scale);
