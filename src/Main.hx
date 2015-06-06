@@ -765,6 +765,9 @@ class Main extends luxe.Game {
     }
 
     public function drawScaleHandles() {
+        if (curPoly().points.length == 0) return false; //currently turning off scaling for groups
+        //since I can't figure out how to make it work right
+
         var handles = scaleHandles();
 
         Luxe.draw.line({
@@ -802,9 +805,13 @@ class Main extends luxe.Game {
             depth : aboveLayersDepth,
             immediate : true
         });
+
+        return true;
     }
 
     function collisionWithScaleHandle(mousePos) : Bool {
+        if (curPoly().points.length == 0) return false; //currently turning off scaling for groups
+        //since I can't figure out how to make it work right
 
         var handles = scaleHandles();
 

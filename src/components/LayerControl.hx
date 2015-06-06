@@ -16,6 +16,7 @@ import luxe.collision.Collision;
 import luxe.collision.shapes.Polygon in CollisionPoly;
 
 using utilities.VectorExtender;
+using utilities.TransformExtender;
 
 class LayerControl extends EditorComponent {
 
@@ -194,6 +195,8 @@ class LayerControl extends EditorComponent {
 		//keep track of layer indices
 		var i = Main.instance.curLayer;
 		var tmpParentPos = parent.pos.clone();
+		var tmpParentScale = parent.scale.clone();
+		var tmpParentRotZ = parent.rotation_z;
 
 		//remove parent
 		Edit.RemoveLayer(Main.instance.layers, i);
@@ -207,9 +210,44 @@ class LayerControl extends EditorComponent {
 
 		//add polygons to parent's layer and re-adjust their transforms to new coord system
 		for (p in polyList) {
+			var worldPos = p.pos.toWorldSpace(parent.transform);
+
 			p.parent = parent.parent;
-			Edit.AddLayer(Main.instance.layers, p, i);
-			p.pos.add(tmpParentPos);
+			Edit.AddLayer(Main.instance.layers, p, i); //I expect this to break at lower levels
+
+			/*
+			var u = p.transform.up();
+			var r = p.transform.right();
+			trace("u " + u + " - r " + r);
+
+			var scaleYVec = parent.transform.up().multiplyScalar(parent.scale.y);
+			var scaleXVec = parent.transform.right().multiplyScalar(parent.scale.x);
+			trace("y scale " + scaleYVec + " - x scale " + scaleXVec);
+
+			var rMult = scaleXVec.dot(r) + scaleYVec.dot(r);
+			var uMult = scaleXVec.dot(u) + scaleYVec.dot(u);
+
+			var multVec = new Vector(rMult, uMult);
+			trace("mult vec " + multVec);
+			trace("~~~~~");
+			*/
+
+			//can this all be done w/ one transform operation?
+			//p.pos.add(tmpParentPos);
+			
+			//THIS almost seems like it could work, but it resets back to normal for some reason
+			//is there something that changes the local matrix automatically hidden in the transform code?
+			//(ask Sven Bergstrom)
+			/*
+			p.transform.world.matrix = p.transform.world.matrix.multiplyMatrices(parent.transform.world.matrix, p.transform.local.matrix);
+			p.transform.local.matrix = p.transform.world.matrix.multiplyMatrices(parent.transform.world.matrix, p.transform.local.matrix);
+			*/
+
+			p.pos = worldPos;
+			//p.scale.multiply(tmpParentScale);
+			//p.scale.multiply(multVec);
+			p.rotation_z += tmpParentRotZ;
+
 			i++;
 		}
 
@@ -285,19 +323,6 @@ class LayerControl extends EditorComponent {
 					Main.instance.switchLayerSelection(-1);
 				}
 			}
-			
-
-			//THIS DIDN'T WORK (ok, it sorta works --- why???)
-			/*
-			var curP = Main.instance.curPoly();
-			Main.instance.layers.removeLayer(curP);
-			Main.instance.layers.addLayer(curP, closestLayer);
-			*/
-
-
-			//THIS CAUSES BUGS IF YOU MOVE THE LAYER TOO FAST
-			//but it also sort of works?
-			//Main.instance.layers.swapLayers(Main.instance.curLayer, closestLayer);
 
 			Main.instance.goToLayer( closestLayer );
 		}
@@ -326,41 +351,6 @@ class LayerControl extends EditorComponent {
 
 		//SELECT LAYER
 		Main.instance.goToLayer(closestLayer);
-
-		/*
-		//CREATE THUMBNAIL
-		if (thumbnailPoly != null) {
-
-			//THIS NEEDS TO BE REFACTORED BRO
-			Main.instance.uiSceneBatcher.remove(thumbnailPoly.geometry);
-			for (c in thumbnailPoly.children) {
-				Main.instance.uiSceneBatcher.remove( cast(c, Visual).geometry );
-			}
-		}
-
-		var thumbWidth = 100;
-		thumbnailPoly = new Polygon({batcher: Main.instance.uiSceneBatcher, depth: 2000}, [],
-										Main.instance.curPoly().jsonRepresentation());
-
-		var heights = layerLineHeights();
-		thumbnailPoly.pos.y = heights[closestLayer];
-		thumbnailPoly.pos.x = bounds.x + bounds.w + thumbWidth/2;
-
-		var scaleRatio = thumbnailPoly.getRectBounds().w / thumbWidth;
-		thumbnailPoly.scale = thumbnailPoly.scale.divideScalar(scaleRatio);
-
-		groupHandle.pos.y = heights[closestLayer];
-		enterGroupHandle.pos.y = heights[closestLayer];
-
-		if (Main.instance.curPoly().children.length > 0) {
-			enterGroupHandle.color = new Color(1,0,1);
-			groupHandle.color = new Color(1,0,0);
-		}
-		else {
-			enterGroupHandle.color = new Color(0,0,0);
-			groupHandle.color = new Color(0,1,0);
-		}
-		*/
 	}
 
 	function updateSelectedLayerHandles() {

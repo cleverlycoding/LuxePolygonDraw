@@ -78,7 +78,24 @@ class AddLayerEdit extends Edit {
 		super.redo();
 
 		//layerManager.addLayer(layer, layerIndex);
-		layerList.insert(layerIndex, layer);
+
+		//hack, check for parent (move this hack further down??)
+		if (layerList.length > 0 && layerList[0].parent != null) {
+			//THIS WORKS, BUT DEPTHS DON'T GET UPDATED :(((
+			var parent = layerList[0].parent;
+			for (l in layerList) {
+				l.parent = null;
+			}
+			layerList.insert(layerIndex, layer);
+			for (l in layerList) {
+				l.parent = parent; //this is probably the worst way to do this???
+			}
+			//layer.parent = parent;
+		}
+		else {
+			layerList.insert(layerIndex, layer);	
+		}
+
 		Luxe.renderer.batcher.add(layer.geometry);
 	}
 
@@ -86,11 +103,16 @@ class AddLayerEdit extends Edit {
 		super.undo();
 
 		//layerManager.removeLayer(layer);
+		if (layer.parent != null) {
+			layer.parent = null;
+		}
 		layerList.remove(layer);
+
 		Luxe.renderer.batcher.remove(layer.geometry);
 	}
 }
 
+//this probably needs updating
 class RemoveLayerEdit extends Edit {
 	//var layerManager:LayerManager;
 	var layerList:Array<Polygon>;
