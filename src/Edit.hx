@@ -5,6 +5,7 @@ import phoenix.Batcher;
 //import LayerManager;
 
 using utilities.PolygonGroupExtender;
+using utilities.VectorExtender;
 
 class Edit {
 	public static var doneList:Array<Edit> = [];
@@ -81,8 +82,10 @@ class AddLayerEdit extends Edit {
 
 		//hack, check for parent (move this hack further down??)
 		if (layerList.length > 0 && layerList[0].parent != null) {
-			//THIS WORKS, BUT DEPTHS DON'T GET UPDATED :(((
 			var parent = layerList[0].parent;
+			
+			layer.transform.pos = layer.transform.pos.toLocalSpace(parent.transform);
+
 			for (l in layerList) {
 				l.parent = null;
 			}
@@ -95,6 +98,8 @@ class AddLayerEdit extends Edit {
 		else {
 			layerList.insert(layerIndex, layer);	
 		}
+
+		Main.instance.rootLayers.setDepthsRecursive(0, 1);
 
 		Luxe.renderer.batcher.add(layer.geometry);
 	}

@@ -57,6 +57,22 @@ class PolygonGroupExtender {
 		return pGroup;
 	}
 
+	static public function setDepthsRecursive(pGroup:Array<Polygon>, baseDepth:Float, depthIncrement:Float) : Float {
+		var curDepth = baseDepth;
+
+		for (layer in pGroup) {
+			layer.depth = curDepth;
+
+			if (layer.children.length > 0) {
+				curDepth = layer.getChildrenAsPolys().setDepthsRecursive(curDepth, depthIncrement);
+			}
+
+			curDepth += depthIncrement;
+		}
+
+		return curDepth;
+	}
+
 	static public function setDepthsInRange(pGroup:Array<Polygon>, minDepth:Float, maxDepth:Float) : Array<Polygon> {
 		var depthIncrement = (maxDepth - minDepth) / pGroup.length;
 		return pGroup.setDepths(minDepth, depthIncrement);

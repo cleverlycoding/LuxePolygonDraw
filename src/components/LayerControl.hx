@@ -178,6 +178,9 @@ class LayerControl extends EditorComponent {
 			//or do I need to restructure groups so they don't use empty polygons as containers???
 		}
 
+		//hack to prevent crashes until I care about fixing this better
+		Main.instance.curLayer = 0;
+
 		updateSelectedLayerHandles();
 	}
 
