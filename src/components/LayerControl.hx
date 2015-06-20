@@ -17,6 +17,7 @@ import luxe.collision.shapes.Polygon in CollisionPoly;
 
 using utilities.VectorExtender;
 using utilities.TransformExtender;
+using utilities.PolygonGroupExtender;
 
 class LayerControl extends EditorComponent {
 
@@ -247,7 +248,7 @@ class LayerControl extends EditorComponent {
 			*/
 
 			p.pos = worldPos;
-			//p.scale.multiply(tmpParentScale);
+			p.scale.multiply(tmpParentScale);
 			//p.scale.multiply(multVec);
 			p.rotation_z += tmpParentRotZ;
 
@@ -291,7 +292,12 @@ class LayerControl extends EditorComponent {
 
 		parentPoly.recenter();
 
+		if (Main.instance.layers.length > 0 && Main.instance.layers[0].parent != null) {
+			var parent = Main.instance.layers[0].parent;
+			parentPoly.parent = parent;
+		}
 		Main.instance.layers.insert(groupLayer, parentPoly);
+		Main.instance.rootLayers.setDepthsRecursive(0, 1);
 
 		Main.instance.switchLayerSelection(groupLayer);
 
@@ -363,11 +369,23 @@ class LayerControl extends EditorComponent {
 		//CREATE THUMBNAIL
 		if (thumbnailPoly != null) {
 
+			trace("remove polys");
+
 			//THIS NEEDS TO BE REFACTORED BRO
 			Main.instance.uiSceneBatcher.remove(thumbnailPoly.geometry);
+			var childList = thumbnailPoly.getChildrenAsPolys();
+			while (childList.length > 0) {
+				trace(childList.length);
+				var c = childList.pop();
+				if (c.children.length > 0) trace(c.children.length + " !!");
+				if (c.children.length > 0) childList = childList.concat( c.getChildrenAsPolys() );
+				Main.instance.uiSceneBatcher.remove(c.geometry);
+			}
+			/*
 			for (c in thumbnailPoly.children) {
 				Main.instance.uiSceneBatcher.remove( cast(c, Visual).geometry );
 			}
+			*/
 		}
 
 		var thumbWidth = 100;

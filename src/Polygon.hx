@@ -11,6 +11,7 @@ import luxe.collision.ShapeDrawerLuxe;
 
 using utilities.VectorExtender;
 using utilities.PolylineExtender;
+using utilities.TransformExtender;
 
 using Lambda;
 
@@ -128,6 +129,77 @@ class Polygon extends Visual {
 		}
 		return pointArray;
 	}
+
+	/*
+	public function scaleChildren(scaleDelta : Vector) {
+		for (c in getChildrenAsPolys()) {
+			//TODO fix the thing where it gets stuck at the center
+			//c.pos.add(Vector.MultiplyVector(c.pos, scaleDelta));
+			trace("scale");
+			trace(scaleDelta);
+			trace(c.pos.normalized);
+
+			var n = c.pos.normalized;
+			if (n.x < 0.01 && n.x > -0.01) n.x = 0.01;
+			if (n.y < 0.01 && n.y > -0.01) n.y = 0.01;
+
+			c.pos.add( Vector.MultiplyVector(scaleDelta, n.multiplyScalar(10)) );
+			
+			while (c.pos.distance(new Vector(0,0)) < 0.01) {
+				c.pos.add(Vector.MultiplyVector(c.pos, scaleDelta));
+			}
+			
+		}
+	}
+	*/
+
+
+	/*
+	override function set_scale(newScale : Vector) : Vector {
+		//trace("SCALE INTERCEPT " + newScale);
+		if (points.length > 0) {
+			super.set_scale(newScale);
+		}
+		else {
+			var dif = newScale.subtract(scale);
+			var scaleDeltOnParent = transform.up().clone().multiplyScalar(dif.y);
+			scaleDeltOnParent.add( transform.right().clone().multiplyScalar(dif.x) );
+			//WORK HERE
+			trace("IT'S WORKINGGGG");
+			trace("PP " + scaleDeltOnParent);
+			trace("p-up " + transform.up());
+
+			for (c in getChildrenAsPolys()) {
+				//c.scale = Vector.Add(c.scale, dif);
+
+				/////
+				trace("c-up " + c.transform.localUp());
+
+				var upComp = scaleDeltOnParent.dot(c.transform.localUp());
+				var rightComp = scaleDeltOnParent.dot(c.transform.localRight());
+
+				trace("u " + upComp);
+				trace("r " + rightComp);
+
+				var scaleDeltOnChild = c.transform.localUp().clone().multiplyScalar(upComp);
+				scaleDeltOnChild.add( c.transform.localRight().clone().multiplyScalar(rightComp) );
+
+				trace("DIF " + dif);
+				trace("CC " + scaleDeltOnChild);
+				c.scale = Vector.Add(c.scale, scaleDeltOnChild);
+				/////
+
+				var scaleDeltOnChild = dif.clone();
+				scaleDeltOnChild.applyQuaternion(c.transform.rotation);
+				trace(c.transform.rotation);
+				trace("CC " + scaleDeltOnChild);
+
+				c.scale = Vector.Add(c.scale, scaleDeltOnChild);
+			}
+		}
+		return newScale;
+	}
+	*/
 
 	function calculateBounds() : Rectangle {
 		var xMin = 0.0;

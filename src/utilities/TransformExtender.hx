@@ -35,6 +35,18 @@ class TransformExtender {
 		return rightV;
 	}
 
+	static public function localUp(t:Transform) {
+		var upV = new Vector(0.0, 1.0);
+		upV.applyQuaternion(t.rotation);
+		return upV;
+	}
+
+	static public function localRight(t:Transform) {
+		var rightV = new Vector(1.0, 0.0);
+		rightV.applyQuaternion(t.rotation);
+		return rightV;
+	}
+
 	static public function rotate(t:Transform, a:Float) { //rotates right (remember a == radians --- change later?)
 		var rot = ( new Quaternion() ).setFromAxisAngle( new Vector(0,0,1), a );
 		t.rotation.multiply(rot);

@@ -93,6 +93,8 @@ class AddLayerEdit extends Edit {
 			for (l in layerList) {
 				l.parent = parent; //this is probably the worst way to do this???
 			}
+
+			cast(parent, Polygon).recenter();
 			//layer.parent = parent;
 		}
 		else {
@@ -139,6 +141,7 @@ class RemoveLayerEdit extends Edit {
 
 		//layerManager.removeLayer(layer);
 		layerList.remove(layer);
+		layer.parent = null; //it might or might not have a parent
 		batcher.remove(layer.geometry);
 		//remove children too (is this really the right place for this???)
 		for (c in layer.children) {

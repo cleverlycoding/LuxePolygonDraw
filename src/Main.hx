@@ -765,7 +765,7 @@ class Main extends luxe.Game {
     }
 
     public function drawScaleHandles() {
-        if (curPoly().points.length == 0) return false; //currently turning off scaling for groups
+        //if (curPoly().points.length == 0) return false; //currently turning off scaling for groups
         //since I can't figure out how to make it work right
 
         var handles = scaleHandles();
@@ -806,11 +806,22 @@ class Main extends luxe.Game {
             immediate : true
         });
 
+        //third handle
+        Luxe.draw.rectangle({
+            x : handles.origin.x - (handles.size * 2 / 2),
+            y : handles.origin.y - (handles.size * 2 / 2),
+            h : handles.size * 2,
+            w : handles.size * 2,
+            color : new Color(150,255,0),
+            depth : aboveLayersDepth,
+            immediate : true
+        });
+
         return true;
     }
 
     function collisionWithScaleHandle(mousePos) : Bool {
-        if (curPoly().points.length == 0) return false; //currently turning off scaling for groups
+        //if (curPoly().points.length == 0) return false; //currently turning off scaling for groups
         //since I can't figure out how to make it work right
 
         var handles = scaleHandles();
@@ -820,8 +831,7 @@ class Main extends luxe.Game {
         var mouseCollider = new CollisionCircle(mousePos.x, mousePos.y, 5);
         var handleColliderUp = new CollisionCircle(handles.up.x, handles.up.y, handles.size * 0.7); //this collision circle is kind of a hack, but it should be "close enough"
         var handleColliderRight = new CollisionCircle(handles.right.x, handles.right.y, handles.size * 0.7);
-
-
+        var handleColliderCenter = new CollisionCircle(handles.origin.x, handles.origin.y, handles.size * 1.2);
         if (Collision.test(mouseCollider, handleColliderUp) != null) {
             scaleDirLocal = new Vector(0,1); // NOT A GREAT WAY TO DO THIS
             //scaleDirWorld = curPoly().transform.up();
@@ -832,6 +842,10 @@ class Main extends luxe.Game {
             //scaleDirWorld = curPoly().transform.right();
             return true;
         }
+        else if (Collision.test(mouseCollider, handleColliderCenter) != null) {
+            scaleDirLocal = new Vector(1,1);
+            return true;
+        }
         else {
             return false;
         }
@@ -840,6 +854,9 @@ class Main extends luxe.Game {
     public function startScaleDrag(mousePos) : Bool {
         if (collisionWithScaleHandle(mousePos)) {
             dragMouseStartPos = Luxe.camera.screen_point_to_world(mousePos);
+            if (scaleDirLocal.x == 1 && scaleDirLocal.y == 1) {
+                scaleDirWorld = dragMouseStartPos.clone().subtract( scaleHandles().origin ).normalized;
+            }
             return true;
         }
         return false;
@@ -850,7 +867,10 @@ class Main extends luxe.Game {
         mousePos = Luxe.camera.screen_point_to_world(mousePos);
         var drag = Vector.Subtract(mousePos, dragMouseStartPos);
 
-        if (scaleDirLocal.x != 0) {
+        if (scaleDirLocal.x == 1 && scaleDirLocal.y == 1) {
+            //do nothing for now
+        }
+        else if (scaleDirLocal.x != 0) {
             scaleDirWorld = curPoly().transform.right();
         }
         else {
@@ -861,7 +881,17 @@ class Main extends luxe.Game {
         scaleDelta.x = (scaleDelta.x / curPoly().getRectBounds().w) * curPoly().transform.scale.x * 2;
         scaleDelta.y = (scaleDelta.y / curPoly().getRectBounds().h) * curPoly().transform.scale.y * 2;
 
-        curPoly().transform.scale.add(scaleDelta);
+        /*
+        if (curPoly().points.length == 0) { //is group 
+            //solution for scaling groups is currently kind of a fake
+            //is that OKAY???
+            curPoly().scaleChildren(scaleDelta);
+        }
+        else {
+            curPoly().transform.scale.add(scaleDelta);
+        }
+        */
+        curPoly().scale = Vector.Add(curPoly().scale, scaleDelta);// add();
 
         //hack to avoid the horrible problems that occur when scale == 0
         if (curPoly().transform.scale.x == 0) {
