@@ -132,6 +132,8 @@ class ComponentManager {
 			}
 			
 		}
+
+		trace("DONE");
 	}
 
 	public function deactivateComponents(?scene : Scene) {

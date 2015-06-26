@@ -40,6 +40,8 @@ using utilities.TransformExtender;
 using utilities.FileInputExtender;
 using utilities.PolygonGroupExtender;
 
+import states.ComponentState;
+
 class Main extends luxe.Game {
 
     //singleton
@@ -99,6 +101,7 @@ class Main extends luxe.Game {
     public var boneBatcher : Batcher;
 
     override function ready() {
+
         instance = this;
 
         //start current layers on root list
@@ -114,7 +117,9 @@ class Main extends luxe.Game {
 
         //render settings
         Luxe.renderer.batcher.layer = 1;
-        Luxe.renderer.clear_color = new ColorHSV(0, 0, 0.2);
+        //Luxe.renderer.clear_color = new ColorHSV(0, 0, 0.2); //old color
+        Luxe.renderer.clear_color = new ColorHSV(0, 0, 0.1);
+        //Luxe.renderer.clear_color = new ColorHSV(250, 0.5, 0.3);
         Luxe.renderer.state.lineWidth(2);
 
         //UI
@@ -153,9 +158,17 @@ class Main extends luxe.Game {
 
        // new IconButton({}, "/Users/adamrossledoux/Code/Haxe/LuxePolygonDraw/levels/floppy_icon.json");
 
+       //HACK??? - this keeps the screen centered nicely on resize (for SOME REASON??)
+       Luxe.camera.size = Luxe.screen.size;
+
     } //ready
 
     override function onkeydown(e:KeyEvent) {
+        //practice opening files from command line
+        /*
+        Sys.command("open '/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl'");
+        Sys.command("'/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl' ~/Code/Web/egg/index.html");
+        */
     }
 
     override function onkeyup(e:KeyEvent) {
@@ -165,10 +178,49 @@ class Main extends luxe.Game {
     } //onkeyup
 
     override function update(dt:Float) {
+        //drawGrid();
 
+        //trace(Luxe.screen.mid);
+        //trace(Luxe.camera.center);
     } //update
 
+    function drawGrid() {
+        //trace(Luxe.camera.zoom);
+        
+        var baseGridSize = 100.0;
+        var gridSize = baseGridSize * Luxe.camera.zoom;
+
+        var x = (-Luxe.camera.pos.x * Luxe.camera.zoom) % gridSize;
+        var y = (-Luxe.camera.pos.y * Luxe.camera.zoom) % gridSize;
+
+        //trace(Luxe.camera.viewport.h);
+
+        while (x < Luxe.screen.w) {
+            Luxe.draw.line({
+                p0 : new Vector(x, 0),
+                p1 : new Vector(x, Luxe.screen.h),
+                color : new Color(1,1,1,0.3),
+                immediate : true,
+                batcher : uiBatcher
+            });
+            x += gridSize;
+        }
+
+        while (y < Luxe.screen.h) {    
+            Luxe.draw.line({
+                p0 : new Vector(0, y),
+                p1 : new Vector(Luxe.screen.w, y),
+                color : new Color(1,1,1,0.3),
+                immediate : true,
+                batcher : uiBatcher
+            }); 
+            y += gridSize;
+        }
+
+    }
+
     override function onmousedown(e:MouseEvent) {
+        trace(e.button);
     }
 
     override function onmousemove(e:MouseEvent) {
@@ -178,29 +230,6 @@ class Main extends luxe.Game {
     }
 
     override function onwindowresized(e:WindowEvent) {
-        //Luxe.camera.viewport.w = e.event.x;
-        //Luxe.camera.viewport.h = e.event.y;
-        
-        //trace(e.event.x);
-        //trace(Luxe.screen.w);
-        //trace(Luxe.camera.pos);
-
-
-        var tmp = Luxe.camera.center.clone();
-        Luxe.camera.size = Luxe.screen.size.clone();
-        trace(Luxe.screen.mid);
-        trace(Luxe.camera.center);
-        //Luxe.camera.center = tmp;
-        trace(Luxe.camera.center);
-
-        
-
-        Luxe.camera.zoom = Luxe.screen.size.y / refSize.y;
-        Luxe.camera.pos = Vector.Subtract(Luxe.screen.size, Vector.Multiply(refSize, 1 / Luxe.camera.zoom));
-
-
-        //trace(Luxe.camera.viewport);
-        //Luxe.camera.center = Luxe.screen.mid.clone();
     }
 
     function createUI () {
@@ -245,7 +274,7 @@ class Main extends luxe.Game {
         uiSceneCamera = new Camera({name:"uiSceneCamera", scene: uiScene});
         uiSceneBatcher = Luxe.renderer.create_batcher({name: "uiSceneBatcher", layer: 11, camera: uiSceneCamera.view});
         
-          
+        /*  
         Luxe.loadJSON("assets/ui/ed_ui_scene14.json", function(j) {
 
             (new Array<Polygon>()).createFromJson(j.json, uiSceneBatcher, uiScene);
@@ -257,13 +286,14 @@ class Main extends luxe.Game {
             });
 
         });
+        */
         
 
-        /*
         playModeUIScene = new Scene("playModeUIScene");
         playModeUICamera = new Camera({name:"playModeUICamera", scene: playModeUIScene});
         playModeUIBatcher = Luxe.renderer.create_batcher({name: "playModeUIBatcher", layer: 11, camera: playModeUICamera.view});
 
+        /*
         Luxe.loadJSON("assets/ui/play_ui_scene2.json", function(j) {
 
             (new Array<Polygon>()).createFromJson(j.json, playModeUIBatcher, playModeUIScene);
@@ -770,6 +800,19 @@ class Main extends luxe.Game {
 
         var handles = scaleHandles();
 
+        //third handle
+        Luxe.draw.rectangle({
+            x : handles.origin.x - (handles.size * 2 / 2),
+            y : handles.origin.y - (handles.size * 2 / 2),
+            h : handles.size * 2,
+            w : handles.size * 2,
+            color : new Color(150,255,0),
+            depth : aboveLayersDepth,
+            immediate : true
+        });
+
+        if (curPoly().points.length == 0) return false; //only draw third handle for groups
+
         Luxe.draw.line({
             p0 : handles.origin,
             p1 : handles.up,
@@ -806,17 +849,6 @@ class Main extends luxe.Game {
             immediate : true
         });
 
-        //third handle
-        Luxe.draw.rectangle({
-            x : handles.origin.x - (handles.size * 2 / 2),
-            y : handles.origin.y - (handles.size * 2 / 2),
-            h : handles.size * 2,
-            w : handles.size * 2,
-            color : new Color(150,255,0),
-            depth : aboveLayersDepth,
-            immediate : true
-        });
-
         return true;
     }
 
@@ -835,11 +867,13 @@ class Main extends luxe.Game {
         if (Collision.test(mouseCollider, handleColliderUp) != null) {
             scaleDirLocal = new Vector(0,1); // NOT A GREAT WAY TO DO THIS
             //scaleDirWorld = curPoly().transform.up();
+            if (curPoly().points.length == 0) return false; //hack
             return true;
         }
         else if (Collision.test(mouseCollider, handleColliderRight) != null) {
             scaleDirLocal = new Vector(1,0);
             //scaleDirWorld = curPoly().transform.right();
+            if (curPoly().points.length == 0) return false; //hack
             return true;
         }
         else if (Collision.test(mouseCollider, handleColliderCenter) != null) {
@@ -1506,7 +1540,7 @@ class PlayState extends State {
     }    
 } 
 
-
+/*
 class ComponentState extends State {
     var main : Main;
 
@@ -1681,6 +1715,7 @@ class ComponentState extends State {
         }
     }
 }
+*/
 
 class GroupState extends State {
     var startGroupPos = new Vector(0,0);
