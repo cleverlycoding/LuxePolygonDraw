@@ -9,6 +9,11 @@ class ComponentManager {
 	public var componentData : Array<{name:String, components:Array<Dynamic>}> = []; //hack attack
 
 	//noDupes is a hack - please get rid of as soon as possible
+	public function addComponentFromJson(jsonData) {
+		//DOESN'T AVOID DUPES !!
+		componentData.push(jsonData);
+	}
+
 	public function updateFromJson(jsonData, ?noDupes:Bool) {
 		if (noDupes == null) noDupes = false;
 		if (noDupes) { //HORRIFYING HACK

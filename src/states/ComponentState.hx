@@ -154,6 +154,13 @@ class ComponentState extends State {
 
         main.addSelectedLayerToComponentManagerInput(e);
 
+        //open component file
+        if (e.keycode == Key.key_f && Main.instance.curScenePath != null) {
+            Sys.command("open '/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl'");
+            Sys.command("'/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl' " + 
+                Main.instance.curScenePath + "/components/" + main.curPoly().name + ".json");
+        }
+
         if (e.keycode == Key.key_v) {
             machine.set("draw", main);
         }

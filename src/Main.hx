@@ -100,6 +100,9 @@ class Main extends luxe.Game {
     //animation
     public var boneBatcher : Batcher;
 
+    //saving
+    public var curScenePath : String;
+
     override function ready() {
 
         instance = this;
@@ -615,9 +618,40 @@ class Main extends luxe.Game {
 
     public function Save() {
         //save
-        var rawSaveFileName = Luxe.core.app.io.platform.dialog_save().split(".");
-        var saveFileName = rawSaveFileName[0];
+        var rawPath = Luxe.core.app.io.platform.dialog_save().split(".");
+        var path = rawPath[0];
+        var splitPath = (path + "").split("/");
+        var fileName = splitPath[splitPath.length - 1];
 
+        if (sys.FileSystem.exists(path)) sys.FileSystem.deleteDirectory(path);
+        sys.FileSystem.createDirectory(path);
+        sys.FileSystem.createDirectory(path + "/components");
+
+        //scene file
+        var output = File.write(path + "/" + fileName + ".scene", false);
+
+        var outObj = layers.jsonRepresentation();
+        var outStr = haxe.Json.stringify(outObj);
+        output.writeString(outStr);
+
+        output.close();
+
+        //component files
+        var componentData = componentManager.jsonRepresentation();
+        for (c in componentData) {
+            var output = File.write(path + "/components/" + c.name + ".json", false);
+
+            var outStr = haxe.Json.stringify(c, null, "    ");
+            output.writeString(outStr);
+
+            output.close();
+        }
+
+        curScenePath = path;
+        Luxe.core.app.io.platform.watch_add(path);
+
+        //OLD VERSION
+        /*
         //scene file
         var output = File.write(saveFileName + ".json", false);
 
@@ -635,46 +669,98 @@ class Main extends luxe.Game {
         output.writeString(outStr);
 
         output.close();
+        */
 
     }
 
     public function Load() {
         //load
+
         var rawOpenFileName = Luxe.core.app.io.platform.dialog_open().split(".");
         var openFileName = rawOpenFileName[0];
 
         trace("file " + openFileName);
 
-        //scene file
-        var input = File.read(openFileName + ".json", false);
+        if (rawOpenFileName[1] == "scene") { //NEW VERSION
+            trace('new load! ' + openFileName);
+            var splitPath = (openFileName + "").split("/");
+            var fileName = splitPath[splitPath.length - 1];
 
-        var polys = input.readScene(Luxe.renderer.batcher, Luxe.scene);
+            //reconstruct parent path
+            var path = "";
+            for (i in 0 ... splitPath.length - 1) {
+                path += splitPath[i] + "/";
+            }
 
-        //TODO - rewrite the layer manager
-        for (p in polys) {
-            Edit.AddLayer(layers, p, curLayer+1);
-            switchLayerSelection(1);
+            //
+            //scene file
+            var input = File.read(path + fileName + ".scene", false);
+
+            var polys = input.readScene(Luxe.renderer.batcher, Luxe.scene);
+
+            //TODO - rewrite the layer manager
+            for (p in polys) {
+                Edit.AddLayer(layers, p, curLayer+1);
+                switchLayerSelection(1);
+            }
+
+            input.close();
+
+            //component files
+            
+            var componentFiles = sys.FileSystem.readDirectory(path + "components");
+
+            for (compFile in componentFiles) {
+
+                //trace(path + "components/" + compFile);
+
+                var input = File.read(path + "components/" + compFile, false);
+
+                //read all - regardless of how many lines it is
+                var inStr = "";
+                while (!input.eof()) {
+                    inStr += input.readLine();
+                }
+
+                var inObj = haxe.Json.parse(inStr);
+                
+                componentManager.addComponentFromJson(inObj);
+
+                input.close();
+            }
         }
-        
+        else { //OLD VERSION
+            //scene file
+            var input = File.read(openFileName + ".json", false);
 
-        input.close();
+            var polys = input.readScene(Luxe.renderer.batcher, Luxe.scene);
 
-        //component file
-        var input = File.read(openFileName + "_components.json", false);
+            //TODO - rewrite the layer manager
+            for (p in polys) {
+                Edit.AddLayer(layers, p, curLayer+1);
+                switchLayerSelection(1);
+            }
+            
 
-        //read all - regardless of how many lines it is
-        var inStr = "";
-        while (!input.eof()) {
-            inStr += input.readLine();
+            input.close();
+
+            //component file
+            var input = File.read(openFileName + "_components.json", false);
+
+            //read all - regardless of how many lines it is
+            var inStr = "";
+            while (!input.eof()) {
+                inStr += input.readLine();
+            }
+
+            var inObj = haxe.Json.parse(inStr);
+
+            componentManager.updateFromJson(inObj, true);
+
+            componentManager.jsonRepresentation();
+
+            input.close();
         }
-
-        var inObj = haxe.Json.parse(inStr);
-
-        componentManager.updateFromJson(inObj, true);
-
-        componentManager.jsonRepresentation();
-
-        input.close();
     }
 
     public function zoomInput(e:KeyEvent) {
@@ -689,12 +775,12 @@ class Main extends luxe.Game {
     }
 
     public function startDrawing(e:MouseEvent) {
-        if (e.pos.x < Luxe.screen.w * 0.85) { //HORRIBLE HACKS
+        //if (e.pos.x < Luxe.screen.w * 0.85) { //HORRIBLE HACKS
 
             var mousepos = Luxe.renderer.camera.screen_point_to_world(e.pos);
             curLine = new Polyline({color: picker.pickedColor.clone(), depth: aboveLayersDepth+1}, [mousepos]);
             isDrawing = true;
-        }
+        //}
     }
 
     public function smoothDrawing(e:MouseEvent) {
