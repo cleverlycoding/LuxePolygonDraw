@@ -121,8 +121,8 @@ class Main extends luxe.Game {
         //render settings
         Luxe.renderer.batcher.layer = 1;
         //Luxe.renderer.clear_color = new ColorHSV(0, 0, 0.2); //old color
-        Luxe.renderer.clear_color = new ColorHSV(0, 0, 0.1);
-        //Luxe.renderer.clear_color = new ColorHSV(250, 0.5, 0.3);
+        //Luxe.renderer.clear_color = new ColorHSV(0, 0, 0.1); //dark grey
+        Luxe.renderer.clear_color = new ColorHSV(250, 0.5, 0.3); //blue
         Luxe.renderer.state.lineWidth(2);
 
         //UI
@@ -163,6 +163,9 @@ class Main extends luxe.Game {
 
        //HACK??? - this keeps the screen centered nicely on resize (for SOME REASON??)
        Luxe.camera.size = Luxe.screen.size;
+
+       uiSceneCamera.size = Luxe.screen.size;
+       uiSceneCamera.size_mode = SizeMode.contain;
 
     } //ready
 
@@ -233,6 +236,9 @@ class Main extends luxe.Game {
     }
 
     override function onwindowresized(e:WindowEvent) {
+
+        uiSceneCamera.size = Luxe.screen.size; //this works!
+        
     }
 
     function createUI () {
@@ -723,11 +729,15 @@ class Main extends luxe.Game {
                 }
 
                 var inObj = haxe.Json.parse(inStr);
-                
+
                 componentManager.addComponentFromJson(inObj);
 
                 input.close();
             }
+
+            //save path to current scene (and chop off that extra forward slash HACK)
+            curScenePath = path.substring(0,path.length-1);
+            trace("LOAD " + curScenePath);
         }
         else { //OLD VERSION
             //scene file

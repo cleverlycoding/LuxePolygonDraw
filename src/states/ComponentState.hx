@@ -27,7 +27,89 @@ class ComponentState extends State {
     } //onenter
 
     override function update(dt:Float) {
-        
+
+        Luxe.draw.box({
+            x : 0,
+            y : 0,
+            w : 400,
+            h : main.uiSceneCamera.size.y,
+            batcher : main.uiSceneBatcher,
+            immediate : true,
+            color : new Color(0,0,0,0.5)
+        });
+
+        if (main.curPoly() != null) {
+
+            //get data about selected object
+            curEntry = main.componentManager.getEntry(main.curPoly());
+
+            var numComponents = 0;
+            if (curEntry != null) {
+                numComponents = curEntry.components.length;
+            }
+
+            var componentNames = [];
+            if (curEntry != null) {
+                for (c in cast(curEntry.components, Array<Dynamic>)) {
+                    componentNames.push(c.name);
+                }
+                //trace(componentNames);
+            }
+
+            //basic info
+            Luxe.draw.text({
+                color: new Color(1,1,1),
+                pos : new Vector(0,0),
+                point_size : 16,
+                text : "Name: " + main.curPoly().name,
+                immediate : true,
+                batcher : main.uiSceneBatcher
+            });
+
+            Luxe.draw.text({
+                color: new Color(1,1,1),
+                pos : new Vector(0,16),
+                point_size : 16,
+                text : "Edit component [f]ile",
+                immediate : true,
+                batcher : main.uiSceneBatcher
+            });
+
+            Luxe.draw.text({
+                color: new Color(1,1,1),
+                pos : new Vector(0,32),
+                point_size : 16,
+                text : "---",
+                immediate : true,
+                batcher : main.uiSceneBatcher
+            });
+
+            Luxe.draw.text({
+                color: new Color(1,1,1),
+                pos : new Vector(0,48),
+                point_size : 16,
+                text : "Add new [c]omponent",
+                immediate : true,
+                batcher : main.uiSceneBatcher
+            });
+
+            //components
+            var i = 0;
+            for (cName in componentNames) {
+                Luxe.draw.text({
+                    color: new Color(1,1,1),
+                    pos : new Vector(0, 64 + (i * 16)),
+                    point_size : 16,
+                    text : cName,
+                    immediate : true,
+                    batcher : main.uiSceneBatcher
+                });
+
+                i++;
+            }
+        }
+
+        /*
         if (main.curPoly() != null) {
 
             //get data about selected object
@@ -146,6 +228,7 @@ class ComponentState extends State {
             addCollisionBounds = new CollisionPoly(0,0,[new Vector(x,y), new Vector(x+w,y),
                                         new Vector(x+w,y+h), new Vector(x,y+h)]);
         }
+        */
         
     }
 
@@ -167,6 +250,7 @@ class ComponentState extends State {
     }
 
     override function onmousedown(e:MouseEvent) {
+        /*
         if (Collision.pointInPoly(e.pos, addCollisionBounds)) {
             //load
             var rawOpenFileName = Luxe.core.app.io.platform.dialog_open( "Load Component", [{extension:"hx"}] ).split(".");
@@ -187,5 +271,6 @@ class ComponentState extends State {
                 curEntry.components.remove(comp);
             }
         }
+        */
     }
 }
