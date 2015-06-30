@@ -8,12 +8,21 @@ import luxe.Scene;
 class ComponentManager {
 	public var componentData : Array<{name:String, components:Array<Dynamic>}> = []; //hack attack
 
-	//noDupes is a hack - please get rid of as soon as possible
+	//this could be better (needs to incorporate name changes)
+	public function updateComponentFromJson(name, jsonData) {
+		for (d in componentData) {
+			if (d.name == name) {
+				d.components = jsonData.components;
+			}
+		}
+	}
+
 	public function addComponentFromJson(jsonData) {
 		//DOESN'T AVOID DUPES !!
 		componentData.push(jsonData);
 	}
 
+	//noDupes is a hack - please get rid of as soon as possible
 	public function updateFromJson(jsonData, ?noDupes:Bool) {
 		if (noDupes == null) noDupes = false;
 		if (noDupes) { //HORRIFYING HACK

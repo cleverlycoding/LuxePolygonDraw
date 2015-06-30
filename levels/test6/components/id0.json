@@ -1,7 +1,7 @@
 {
     "components": [
         {
-            "rotationSpeed": 10,
+            "rotationSpeed": 100,
             "name": "TestRotationComponent"
         }
     ],

@@ -21,6 +21,7 @@ import luxe.Entity;
 import luxe.Camera;
 import luxe.Scene;
 
+
 //HAXE
 //IOS hack
 
@@ -102,6 +103,7 @@ class Main extends luxe.Game {
 
     //saving
     public var curScenePath : String;
+    var autoSaveOn : Bool;
 
     override function ready() {
 
@@ -167,7 +169,48 @@ class Main extends luxe.Game {
        uiSceneCamera.size = Luxe.screen.size;
        uiSceneCamera.size_mode = SizeMode.contain;
 
+       //set up on automatic saving
+       autoSaveOn = true;
+       Luxe.timer.schedule(30, function() {
+            if (curScenePath != null && autoSaveOn) {
+                trace("SAVING ...");
+                SaveAuto(curScenePath);
+            } 
+        }, true);
     } //ready
+
+    override function onevent(e:SystemEvent) {
+        if (e.type == SystemEventType.file) {
+            if (e.file.type == FileEventType.modify) {
+                if (e.file.path.lastIndexOf("components") != -1) { //is stored in components folder (proabably) hack
+                    trace("update component!");
+
+                    var input = File.read(e.file.path, false);
+
+                    //read all - regardless of how many lines it is
+                    var inStr = "";
+                    while (!input.eof()) {
+                        inStr += input.readLine();
+                    }
+
+                    var inObj = haxe.Json.parse(inStr);
+
+                    componentManager.updateComponentFromJson(inObj.name, inObj);
+
+                    input.close();
+                }
+            }
+        }
+        else if (e.type == SystemEventType.window) {
+            //hack for error: snow.types.WindowEventType should be Null<snow.types.WindowEvent>
+            if (e.window.type == WindowEventType.focus_lost) {
+                autoSaveOn = false;
+            }
+            else if (e.window.type == WindowEventType.focus_gained) {
+                autoSaveOn = true;
+            }
+        }
+    }
 
     override function onkeydown(e:KeyEvent) {
         //practice opening files from command line
@@ -621,15 +664,16 @@ class Main extends luxe.Game {
         }
         
     }
-
-    public function Save() {
-        //save
-        var rawPath = Luxe.core.app.io.platform.dialog_save().split(".");
-        var path = rawPath[0];
+    
+    //no dialog version of save (MERGE these)
+    public function SaveAuto(path : String) {
+        //are these two lines of code dumb?
         var splitPath = (path + "").split("/");
         var fileName = splitPath[splitPath.length - 1];
 
-        if (sys.FileSystem.exists(path)) sys.FileSystem.deleteDirectory(path);
+        //THIS BREAKS :(
+        //if (sys.FileSystem.exists(path)) sys.FileSystem.deleteDirectory(path);
+
         sys.FileSystem.createDirectory(path);
         sys.FileSystem.createDirectory(path + "/components");
 
@@ -653,8 +697,47 @@ class Main extends luxe.Game {
             output.close();
         }
 
+        if (curScenePath != null) Luxe.core.app.io.platform.watch_remove(curScenePath);
         curScenePath = path;
-        Luxe.core.app.io.platform.watch_add(path);
+        Luxe.core.app.io.platform.watch_add(curScenePath);
+    }
+
+    public function Save() {
+        //save
+        var rawPath = Luxe.core.app.io.platform.dialog_save().split(".");
+        var path = rawPath[0];
+        var splitPath = (path + "").split("/");
+        var fileName = splitPath[splitPath.length - 1];
+
+        //THIS BREAKS :(
+        //if (sys.FileSystem.exists(path)) sys.FileSystem.deleteDirectory(path);
+        
+        sys.FileSystem.createDirectory(path);
+        sys.FileSystem.createDirectory(path + "/components");
+
+        //scene file
+        var output = File.write(path + "/" + fileName + ".scene", false);
+
+        var outObj = layers.jsonRepresentation();
+        var outStr = haxe.Json.stringify(outObj);
+        output.writeString(outStr);
+
+        output.close();
+
+        //component files
+        var componentData = componentManager.jsonRepresentation();
+        for (c in componentData) {
+            var output = File.write(path + "/components/" + c.name + ".json", false);
+
+            var outStr = haxe.Json.stringify(c, null, "    ");
+            output.writeString(outStr);
+
+            output.close();
+        }
+
+        if (curScenePath != null) Luxe.core.app.io.platform.watch_remove(curScenePath);
+        curScenePath = path;
+        Luxe.core.app.io.platform.watch_add(curScenePath);
 
         //OLD VERSION
         /*
@@ -682,6 +765,7 @@ class Main extends luxe.Game {
     public function Load() {
         //load
 
+        //TODO replace with "dialog_folder"
         var rawOpenFileName = Luxe.core.app.io.platform.dialog_open().split(".");
         var openFileName = rawOpenFileName[0];
 
@@ -736,7 +820,9 @@ class Main extends luxe.Game {
             }
 
             //save path to current scene (and chop off that extra forward slash HACK)
+            if (curScenePath != null) Luxe.core.app.io.platform.watch_remove(curScenePath);
             curScenePath = path.substring(0,path.length-1);
+            Luxe.core.app.io.platform.watch_add(curScenePath);
             trace("LOAD " + curScenePath);
         }
         else { //OLD VERSION
