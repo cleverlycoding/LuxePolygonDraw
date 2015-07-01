@@ -110,6 +110,9 @@ class Main extends luxe.Game {
     var doneStack = [];
     var undoneStack = [];
 
+    //fix for camera pos reset problem
+    var totalCameraDragDist = new Vector(0,0);
+
     override function ready() {
 
         instance = this;
@@ -290,6 +293,9 @@ class Main extends luxe.Game {
 
         uiSceneCamera.size = Luxe.screen.size; //this works!
 
+        Luxe.camera.transform.pos.add(totalCameraDragDist);
+
+        //trace(Luxe.camera.transform.pos);
     }
 
     /*
@@ -624,6 +630,9 @@ class Main extends luxe.Game {
         drag.divideScalar(Luxe.camera.zoom); //necessary b/c I didn't put the vectors into screen space (WHOOPS)
 
         Luxe.camera.transform.pos.add(drag);
+        //trace(Luxe.camera.transform.pos);
+
+        totalCameraDragDist.add(drag);
 
         dragMouseStartPos = screenPos;
     }
@@ -640,6 +649,7 @@ class Main extends luxe.Game {
             Edit.Redo();
         } 
         */
+
        if (e.keycode == Key.key_z) {
             //Undo
             undo();
@@ -1494,7 +1504,7 @@ class EditState extends State {
 
     override function update(dt:Float) {
         if (main.layers.length > 0) {
-            
+
             main.drawScaleHandles();
             main.drawRotationHandle();
             main.drawVertexHandles();
