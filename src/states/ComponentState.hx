@@ -13,8 +13,11 @@ class ComponentState extends State {
 
     var curEntry : Dynamic;
 
+    //old version
+    /*
     var addCollisionBounds : CollisionPoly = new CollisionPoly(0,0,[new Vector(0,0), new Vector(0,0), new Vector(0,0)]);
     var removeComponentCollisionBoxes : Array<CollisionPoly> = [];
+    */
 
     override function init() {
     } //init

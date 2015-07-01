@@ -29,13 +29,17 @@ class PolygonGroupExtender {
 
 		trace(batcher);
 
-		for (l in cast(data.layers, Array<Dynamic>)) {
-        	var p = new Polygon({batcher: batcher, scene: scene, depth: depthStart}, [], l);
-        	polygonList.push( p );
+		if (data.layers != null) {
 
-        	depthStart += depthIncrement;
-        }
+			for (l in cast(data.layers, Array<Dynamic>)) {
+	        	var p = new Polygon({batcher: batcher, scene: scene, depth: depthStart}, [], l);
+	        	polygonList.push( p );
 
+	        	depthStart += depthIncrement;
+	        }
+
+		}
+		
         pGroup = polygonList; //assign list
 
         return pGroup; //AND return list

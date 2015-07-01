@@ -6,6 +6,6 @@ import luxe.Component;
 
 class Undo extends ActivateableComponent {
 	override public function activate() {
-		Main.instance.Undo();
+		//Main.instance.Undo();
 	}
 }

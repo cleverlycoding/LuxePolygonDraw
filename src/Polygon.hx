@@ -381,4 +381,14 @@ class Polygon extends Visual {
 		}
 		return polyList;
 	}
+
+	override function ondestroy() {
+		super.ondestroy();
+
+		for ( p in getChildrenAsPolys()) {
+			p.destroy();
+		}
+
+		Luxe.scene.remove(this);
+	}
 }

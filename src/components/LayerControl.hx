@@ -180,7 +180,12 @@ class LayerControl extends EditorComponent {
 		}
 
 		//hack to prevent crashes until I care about fixing this better
-		Main.instance.curLayer = 0;
+		//Main.instance.curLayer = 0;
+
+		//better version
+		Main.instance.layerStack.pop();
+		Main.instance.curLayer = Main.instance.layerStack[Main.instance.layerStack.length - 1];
+		trace(Main.instance.layerStack);
 
 		updateSelectedLayerHandles();
 	}
@@ -188,7 +193,10 @@ class LayerControl extends EditorComponent {
 	function editGroup(parent : Polygon) {
 		Main.instance.layers = parent.getChildrenAsPolys();
 		Main.instance.localSpace = parent.transform;
+		
 		Main.instance.curLayer = 0;
+		Main.instance.layerStack.push(Main.instance.curLayer);
+		trace(Main.instance.layerStack);
 
 		updateSelectedLayerHandles();
 	}

@@ -6,6 +6,6 @@ import luxe.Component;
 
 class Redo extends ActivateableComponent {
 	override public function activate() {
-		Main.instance.Redo();
+		//Main.instance.Redo();
 	}
 }

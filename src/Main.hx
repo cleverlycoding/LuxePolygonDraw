@@ -61,6 +61,7 @@ class Main extends luxe.Game {
 	public var curLayer = 0;
 	public var selectedLayerOutline : Polyline;
     public var localSpace : Transform;
+    public var layerStack : Array<Int> = [];
 
 	//color picker
 	public var picker : ColorPicker;
@@ -104,6 +105,10 @@ class Main extends luxe.Game {
     //saving
     public var curScenePath : String;
     var autoSaveOn : Bool;
+
+    //undo / redo (v2)
+    var doneStack = [];
+    var undoneStack = [];
 
     override function ready() {
 
@@ -177,6 +182,9 @@ class Main extends luxe.Game {
                 SaveAuto(curScenePath);
             } 
         }, true);
+
+       layerStack.push(curLayer);
+       saveEditorState();
     } //ready
 
     override function onevent(e:SystemEvent) {
@@ -269,7 +277,7 @@ class Main extends luxe.Game {
     }
 
     override function onmousedown(e:MouseEvent) {
-        trace(e.button);
+        //trace(e.button);
     }
 
     override function onmousemove(e:MouseEvent) {
@@ -281,8 +289,102 @@ class Main extends luxe.Game {
     override function onwindowresized(e:WindowEvent) {
 
         uiSceneCamera.size = Luxe.screen.size; //this works!
-        
+
     }
+
+    /*
+     * NEW UNDO / REDO
+     */
+    public function getEditorState() {
+        //this hack fixes a dumb aliasing error
+        //probably a better way to copy arrays exists though??
+        var layerStackCopy = [];
+        for (i in layerStack) {
+            layerStackCopy.push(i);
+        }
+
+        var editorState = {
+            sceneData : layers.jsonRepresentation(),
+            componentData : componentManager.jsonRepresentation(),
+            layerStack : layerStackCopy
+        };
+
+        return editorState;
+    }
+
+    public function saveEditorState() {
+        doneStack.push(getEditorState());
+        undoneStack = []; //clear undone stack when new action is recorded
+    }
+
+    public function undo() {
+        if (doneStack.length > 1) {
+            undoneStack.push( doneStack.pop() );
+            recreateEditorState( doneStack[doneStack.length - 1] );
+        }
+    }
+
+    public function redo() {
+        if (undoneStack.length > 0) {
+            recreateEditorState( undoneStack[undoneStack.length - 1] );
+            doneStack.push( undoneStack.pop() );
+        }
+    }
+
+    public function recreateEditorState(editorState : Dynamic) {
+        wipeCurrentScene();
+    
+        //recreate layers from json
+        //if (editorState.sceneData)
+        for (p in (new Array<Polygon>()).createFromJson(editorState.sceneData)) {
+            Edit.AddLayer(layers, p, curLayer+1);
+            curLayer++;
+        }
+
+        //recreate components from json
+        componentManager.updateFromJson(editorState.componentData);
+
+        //traverse scene with layerStack to select the right polygon
+        layerStack = editorState.layerStack;
+        curLayer = layerStack[0];
+        
+        for (i in 1 ... layerStack.length) {
+           var groupParent = curPoly();
+           layers = groupParent.getChildrenAsPolys();
+           curLayer = layerStack[i];
+        }
+        
+        //this is bad code copy and pasting
+        if (layers.length > 0) {    
+            var poly : Polygon = layers[curLayer]; //cast(layers.getLayer(curLayer), Polygon);
+
+            //close loop
+            var loop = poly.getPoints();
+            var start = loop[0];
+            loop.push(start);
+
+            selectedLayerOutline.setPoints(loop);
+
+            polyCollision = poly.collisionBounds();
+        }
+        else {
+            selectedLayerOutline.setPoints([]);
+        }
+    }
+
+    public function wipeCurrentScene() {
+        //delete all layers
+        //delete all sub-layers
+        for (l in layers) {
+            l.destroy();
+        }
+        layers = [];
+        //delete all components
+        componentManager.componentData = [];
+    }
+    /*
+     * NEW UNDO / REDO
+     */
 
     function createUI () {
         //separate batcher to layer UI over drawing space
@@ -431,6 +533,9 @@ class Main extends luxe.Game {
         else {
             selectedLayerOutline.setPoints([]);
         }
+
+        layerStack[layerStack.length-1] = curLayer;
+        trace("layer stack update " + layerStack);
     }
 
     public function goToLayer(index:Int) {
@@ -461,8 +566,9 @@ class Main extends luxe.Game {
             var newPolygon = new Polygon({color: curLine.color}, newPolylines.closedLine);
     		
             Edit.AddLayer(layers, newPolygon, curLayer+1);
-    		
+
             switchLayerSelection(1);
+            saveEditorState(); //record state for undo / redo
 
     		//remove drawing line
     		endDrawing();
@@ -523,6 +629,8 @@ class Main extends luxe.Game {
     }
 
     public function undoRedoInput(e:KeyEvent) {
+        //OLD
+        /*
        if (e.keycode == Key.key_z) {
             //Undo
             Edit.Undo();
@@ -531,8 +639,19 @@ class Main extends luxe.Game {
             //Redo
             Edit.Redo();
         } 
+        */
+       if (e.keycode == Key.key_z) {
+            //Undo
+            undo();
+        }
+        else if (e.keycode == Key.key_x) {
+            //Redo
+            redo();
+        } 
     }
 
+    //OLD UNDO / REDO
+    /*
     public function Undo() {
         Edit.Undo();
     }
@@ -540,13 +659,26 @@ class Main extends luxe.Game {
     public function Redo() {
         Edit.Redo();
     }
+    */
 
     public function selectLayerInput(e:KeyEvent) {
+        //OLD
+        /*
         if (e.keycode == Key.key_a) {
             //Go up a layer
             switchLayerSelection(-1);
         }
         else if (e.keycode == Key.key_s) {
+            //Go down a layer
+            switchLayerSelection(1);
+        }
+        */
+
+        if (e.keycode == Key.key_s) {
+            //Go up a layer
+            switchLayerSelection(-1);
+        }
+        else if (e.keycode == Key.key_w) {
             //Go down a layer
             switchLayerSelection(1);
         }
@@ -567,6 +699,8 @@ class Main extends luxe.Game {
             if (layers.length > 0) {    
                 Edit.RemoveLayer(layers, curLayer);
                 switchLayerSelection(-1);
+
+                saveEditorState();
             }
         }
     }
@@ -593,6 +727,8 @@ class Main extends luxe.Game {
     }
 
     public function moveLayerInput(e:KeyEvent) {
+        //OLD
+        /*
         if (e.keycode == Key.key_q) {
             //Move selected layer down the stack
             if (curLayer > 0) {
@@ -607,6 +743,10 @@ class Main extends luxe.Game {
                 switchLayerSelection(1);
             }
         }
+        */
+
+        //todo: recreate this
+        //then: saveEditorState()
     }
 
     public function recentColorsInput(e:KeyEvent) {
@@ -634,6 +774,8 @@ class Main extends luxe.Game {
             //layers.getLayer(curLayer).color = picker.pickedColor.clone();
             //Edit.ChangeColor(layers.getLayer(curLayer), picker.pickedColor.clone());
             Edit.ChangeColor(layers[curLayer], picker.pickedColor.clone());
+
+            saveEditorState();
         }
     }
 
@@ -664,7 +806,7 @@ class Main extends luxe.Game {
         }
         
     }
-    
+
     //no dialog version of save (MERGE these)
     public function SaveAuto(path : String) {
         //are these two lines of code dumb?
@@ -1351,57 +1493,75 @@ class EditState extends State {
     } //onenter
 
     override function update(dt:Float) {
-        main.drawScaleHandles();
-        main.drawRotationHandle();
-        main.drawVertexHandles();
+        if (main.layers.length > 0) {
+            
+            main.drawScaleHandles();
+            main.drawRotationHandle();
+            main.drawVertexHandles();
+        }
     }
 
     override function onmousedown(e:MouseEvent) {
+        if (main.layers.length > 0) {
 
-        draggingScale = main.startScaleDrag(e.pos);
 
-        if (!draggingScale) {
-            draggingRotation = main.startRotationDrag(e.pos);
-        }
+            draggingScale = main.startScaleDrag(e.pos);
 
-        if (!draggingRotation) {
-            draggingVertex = main.startVertexDrag(e.pos);
-        }
+            if (!draggingScale) {
+                draggingRotation = main.startRotationDrag(e.pos);
+            }
 
-        if (!draggingVertex) {
-            draggingLayer = main.startLayerDrag(e.pos);
-        }
-        
-        if (!draggingLayer && !draggingVertex) {
-          main.startSceneDrag(e.pos);
+            if (!draggingRotation) {
+                draggingVertex = main.startVertexDrag(e.pos);
+            }
+
+            if (!draggingVertex) {
+                draggingLayer = main.startLayerDrag(e.pos);
+            }
+            
+            if (!draggingLayer && !draggingVertex) {
+              main.startSceneDrag(e.pos);
+            }
+
         }
     }
 
     override function onmousemove(e:MouseEvent) {
-        if (Luxe.input.mousedown(1)) {
-            if (draggingScale) {
-                main.scaleDrag(e.pos);
-            }
-            else if (draggingRotation) {
-                main.rotationDrag(e.pos);
-            } 
-            else if (draggingVertex) {
-                main.vertexDrag(e.pos);
-            }
-            else if (draggingLayer) {
-                main.layerDrag(e.pos);
-            }
-            else {
-                main.sceneDrag(e.pos);
+        if (main.layers.length > 0) {
+
+            if (Luxe.input.mousedown(1)) {
+                if (draggingScale) {
+                    main.scaleDrag(e.pos);
+                }
+                else if (draggingRotation) {
+                    main.rotationDrag(e.pos);
+                } 
+                else if (draggingVertex) {
+                    main.vertexDrag(e.pos);
+                }
+                else if (draggingLayer) {
+                    main.layerDrag(e.pos);
+                }
+                else {
+                    main.sceneDrag(e.pos);
+                }
             }
         }
     }
 
     override function onmouseup(e:MouseEvent) {
-        draggingVertex = false;
-        draggingLayer = false;
-        draggingRotation = false;
-        draggingScale = false;
+        if (main.layers.length > 0) {
+
+            //undo / redo for: scaling, rotating, vertex editing, translating
+            if (draggingScale || draggingRotation || draggingVertex || draggingLayer) {
+                main.saveEditorState();
+            } 
+
+            draggingVertex = false;
+            draggingLayer = false;
+            draggingRotation = false;
+            draggingScale = false;
+        }
     }
 
     override function onkeydown(e:KeyEvent) {
