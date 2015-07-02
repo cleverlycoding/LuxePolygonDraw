@@ -20,6 +20,7 @@ import snow.types.Types;
 import luxe.Entity;
 import luxe.Camera;
 import luxe.Scene;
+import luxe.Timer;
 
 
 //HAXE
@@ -113,6 +114,11 @@ class Main extends luxe.Game {
     //fix for camera pos reset problem
     var totalCameraDragDist = new Vector(0,0);
 
+    //new layer ui
+    var isLayerNavigatorActive = false;
+    var layerNavUpTime = 5; //seconds
+    var navUpTimer : Timer = new Timer(Luxe.core);
+
     override function ready() {
 
         instance = this;
@@ -179,13 +185,17 @@ class Main extends luxe.Game {
 
        //set up on automatic saving
        autoSaveOn = true;
-       Luxe.timer.schedule(30, function() {
-            if (curScenePath != null && autoSaveOn) {
+       Luxe.timer.schedule(10, function() {
+            if (curScenePath != null && autoSaveOn && layers.length > 0) { 
+                //don't autosave a blank file, so you don't lose your autosave backup
                 trace("SAVING ...");
                 SaveAuto(curScenePath);
             } 
         }, true);
+       //sys.FileSystem.deleteDirectory("/Users/adamrossledoux/Code/Haxe/LuxePolygonDraw/assets/autosave");
+       curScenePath = "/Users/adamrossledoux/Code/Haxe/LuxePolygonDraw/assets/autosave";
 
+       //undo / redo
        layerStack.push(curLayer);
        saveEditorState();
     } //ready
@@ -238,11 +248,58 @@ class Main extends luxe.Game {
     } //onkeyup
 
     override function update(dt:Float) {
-        //drawGrid();
+        drawGrid();
 
         //trace(Luxe.screen.mid);
         //trace(Luxe.camera.center);
+
+        if (isLayerNavigatorActive) {
+            drawLayerNavigator();
+            if (Luxe.screen.cursor.pos.x < 50) {
+                trace("mouse input");
+                activateLayerNavigator(); //keep layer navigator open
+
+                var closestLayer = 0;
+                for (i in 0 ... layers.length) {
+                    var closeH = uiSceneCamera.size.y * ( 1 - ((closestLayer+1) / (layers.length+1)) );
+                    var layerH = uiSceneCamera.size.y * ( 1 - ((i+1) / (layers.length+1)) );
+
+                    if (Math.abs(Luxe.screen.cursor.pos.y - layerH) < Math.abs(Luxe.screen.cursor.pos.y - closeH)) {
+                        closestLayer = i;
+                    }
+                }
+
+                goToLayer(closestLayer);
+            }
+        }
     } //update
+
+    function drawLayerNavigator() {
+        Luxe.draw.box({
+            x : 0,
+            y : 0,
+            w : 50,
+            h : uiSceneCamera.size.y,
+            batcher : uiSceneBatcher,
+            immediate : true,
+            color : new Color (0,0,0)
+        });
+
+        for (i in 0 ... layers.length) {
+            var layerH = uiSceneCamera.size.y * ( 1 - ((i+1) / (layers.length+1)) );
+            var isSelectedLayer = (i == curLayer);
+            var c = (isSelectedLayer) ? new Color(255,255,0) : new Color(255,255,255);
+
+            Luxe.draw.line({
+                p0: new Vector(0, layerH),
+                p1: new Vector(50, layerH),
+                immediate: true,
+                color: c,
+                depth: 1000,
+                batcher : uiSceneBatcher
+            });
+        }
+    }
 
     function drawGrid() {
         //trace(Luxe.camera.zoom);
@@ -687,11 +744,21 @@ class Main extends luxe.Game {
         if (e.keycode == Key.key_s) {
             //Go up a layer
             switchLayerSelection(-1);
+
+            activateLayerNavigator();
         }
         else if (e.keycode == Key.key_w) {
             //Go down a layer
             switchLayerSelection(1);
+
+            activateLayerNavigator();
         }
+    }
+
+    public function activateLayerNavigator() {
+        isLayerNavigatorActive = true;
+        navUpTimer.reset();
+        navUpTimer.schedule(layerNavUpTime, function() {isLayerNavigatorActive = false;});
     }
 
     public function deleteLayerInput(e:KeyEvent) {
@@ -1890,184 +1957,7 @@ class PlayState extends State {
             machine.set("draw", main);
         }
     }    
-} 
-
-/*
-class ComponentState extends State {
-    var main : Main;
-
-    var curEntry : Dynamic;
-
-    var addCollisionBounds : CollisionPoly = new CollisionPoly(0,0,[new Vector(0,0), new Vector(0,0), new Vector(0,0)]);
-    var removeComponentCollisionBoxes : Array<CollisionPoly> = [];
-
-    override function init() {
-    } //init
-
-    override function onleave<T>( _main:T ) {
-    } //onleave
-
-    override function onenter<T>( _main:T ) {
-        main = cast(_main, Main);
-    } //onenter
-
-    override function update(dt:Float) {
-        
-        if (main.curPoly() != null) {
-
-            //get data about selected object
-            curEntry = main.componentManager.getEntry(main.curPoly());
-        
-            var numComponents = 0;
-            if (curEntry != null) {
-                numComponents = curEntry.components.length;
-            }
-
-            var componentNames = [];
-            if (curEntry != null) {
-                for (c in cast(curEntry.components, Array<Dynamic>)) {
-                    componentNames.push(c.name);
-                }
-                //trace(componentNames);
-            }
-
-            //draw component # box
-            Luxe.draw.box({
-                x : -Luxe.camera.pos.x + main.curPoly().pos.x - 20,
-                y : -Luxe.camera.pos.y + main.curPoly().pos.y - 10,
-                w : 60,
-                h : 30,
-                batcher: main.uiBatcher,
-                immediate : true,
-                color : new Color(255, 255, 255)
-            });
-
-            Luxe.draw.rectangle({
-                x : -Luxe.camera.pos.x + main.curPoly().pos.x - 20,
-                y : -Luxe.camera.pos.y + main.curPoly().pos.y - 10,
-                w : 60,
-                h : 30,
-                batcher: main.uiBatcher,
-                immediate : true,
-                color : new Color(0, 0, 0)
-            });
-
-            Luxe.draw.text({
-                color: new Color(0,0,0),
-                pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x - 10, 
-                    -Luxe.camera.pos.y + main.curPoly().pos.y - 10),
-                point_size : 20,
-                text : "c: " + numComponents,
-                immediate : true,
-                batcher : main.uiBatcher
-            });
-
-            //draw component box
-            var r = main.curPoly().getRectBounds();
-            var h = 10 + (numComponents+1) * 20;
-            Luxe.draw.box({
-                x: -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20,
-                y: -Luxe.camera.pos.y + main.curPoly().pos.y - h/2,
-                w : 220,
-                h : h,
-                immediate : true,
-                color : new Color(1,1,1),
-                batcher : main.uiBatcher
-            });
-
-            //write component names
-            var i = 0;
-            removeComponentCollisionBoxes = []; //hacky ass way to do this shit <3 <3 <3
-            for (cName in componentNames) {
-                Luxe.draw.text({
-                    color: new Color(0,0,0),
-                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 40, 
-                        -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
-                    point_size : 20,
-                    text : cName,
-                    immediate : true,
-                    batcher : main.uiBatcher
-                });
-
-                Luxe.draw.text({
-                    color: new Color(1,0,0),
-                    pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20, 
-                        -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
-                    point_size : 20,
-                    text : "X",
-                    immediate : true,
-                    batcher : main.uiBatcher
-                });
-
-                var x = -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20;
-                var y = -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20);
-                var w = 20;
-                var h = 20;
-                removeComponentCollisionBoxes.push( 
-                                        new CollisionPoly(0,0,
-                                                [new Vector(x,y), new Vector(x+w,y),
-                                                    new Vector(x+w,y+h), new Vector(x,y+h)])); //wtf is this formating le doux <3
-
-                
-                i++;
-            }
-
-            //add component text
-            Luxe.draw.text({
-                color: new Color(0,1,0),
-                pos : new Vector(-Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20, 
-                    -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20)),
-                point_size : 20,
-                text : "+ Add Component",
-                immediate : true,
-                batcher : main.uiBatcher
-            });
-
-            //update collision box
-            var x = -Luxe.camera.pos.x + main.curPoly().pos.x + r.w/2 + 20;
-            var y = -Luxe.camera.pos.y + main.curPoly().pos.y - h/2 + (i * 20);
-            var w = 200;
-            var h = 20;
-            addCollisionBounds = new CollisionPoly(0,0,[new Vector(x,y), new Vector(x+w,y),
-                                        new Vector(x+w,y+h), new Vector(x,y+h)]);
-        }
-        
-    }
-
-    override function onkeydown(e:KeyEvent) {
-        main.selectLayerInput(e);
-
-        main.addSelectedLayerToComponentManagerInput(e);
-
-        if (e.keycode == Key.key_v) {
-            machine.set("draw", main);
-        }
-    }
-
-    override function onmousedown(e:MouseEvent) {
-        if (Collision.pointInPoly(e.pos, addCollisionBounds)) {
-            //load
-            var rawOpenFileName = Luxe.core.app.io.platform.dialog_open( "Load Component", [{extension:"hx"}] ).split(".");
-            var openFileName = rawOpenFileName[0];
-            var fileNameSplit = openFileName.split("/"); //need to change for other OSs?
-            var className = fileNameSplit[fileNameSplit.length-1];
-            main.componentManager.addComponent(main.curPoly(), className);
-        }
-
-        for (i in 0 ... removeComponentCollisionBoxes.length) {
-            trace("remove comp " + i + "??");
-
-            var rccb = removeComponentCollisionBoxes[i];
-            var comp = curEntry.components[i];
-
-            if (Collision.pointInPoly(e.pos, rccb)) {
-                trace("kill dat shit");
-                curEntry.components.remove(comp);
-            }
-        }
-    }
 }
-*/
 
 class GroupState extends State {
     var startGroupPos = new Vector(0,0);
