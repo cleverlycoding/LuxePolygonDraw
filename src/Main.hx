@@ -119,7 +119,7 @@ class Main extends luxe.Game {
     var layerNavUpTime = 5; //seconds
     var navUpTimer : Timer = new Timer(Luxe.core);
     var layerNavMode = 0; //0 = select, 1 = move, 2 = group
-    var keydownDictionary = {};
+    var layerGroupLastIndex = 0;
 
     override function ready() {
 
@@ -235,6 +235,45 @@ class Main extends luxe.Game {
         }
     }
 
+    public function groupLayers(startIndex, lastIndex) {
+        var groupLayer = cast( Math.min(startIndex, lastIndex), Int );
+
+        var polysInGroup = [];
+        var i = 0;
+        for (l in layers) {
+
+            
+            var isSelectedGroup = ( 
+                            ( (lastIndex > startIndex && i <= lastIndex && i >= startIndex) ||
+                            (lastIndex < startIndex && i >= lastIndex && i <= startIndex) )
+                        );
+            
+
+            if (isSelectedGroup) {
+                polysInGroup.push(l);
+            }
+
+            i++;
+
+        }
+
+        var parentPoly = new Polygon({}, []);
+
+        for (childPoly in polysInGroup) {
+            layers.remove(childPoly);
+            childPoly.parent = parentPoly;
+        }
+
+        parentPoly.recenter();
+
+        if (layers.length > 0 && layers[0].parent != null) {
+            var parent = layers[0].parent;
+            parentPoly.parent = parent;
+        }
+        layers.insert(groupLayer, parentPoly);
+        rootLayers.setDepthsRecursive(0, 1);
+    }
+
     override function onkeydown(e:KeyEvent) {
         //practice opening files from command line
         /*
@@ -246,6 +285,33 @@ class Main extends luxe.Game {
             if (isLayerNavigatorActive) {
                 layerNavMode = 1; //press shift to engage move mode
             }
+        }
+
+        if (e.keycode == Key.lmeta || e.keycode == Key.rmeta) {
+            if (isLayerNavigatorActive) {
+                if (layerNavMode == 2) {
+                    //group and exit group mode
+                    if (curLayer != layerGroupLastIndex) {
+                        groupLayers(curLayer, layerGroupLastIndex);
+                        goToLayer( (curLayer < layerGroupLastIndex) ? curLayer : layerGroupLastIndex );
+                    }
+                    layerNavMode = 0; //return to select mode
+                }
+                else {
+                    layerNavMode = 2; //press meta to engage group mode
+                }
+            }
+        }
+
+        if (e.keycode == Key.key_w && e.mod.meta) { //meta == cmd (or Win key?)
+            if (layerNavMode != 2) layerGroupLastIndex = curLayer;
+            if (layerGroupLastIndex < layers.length - 1) layerGroupLastIndex++;
+            activateLayerNavigator(2);
+        }
+        if (e.keycode == Key.key_s && e.mod.meta) { //meta == cmd (or Win key?)
+            if (layerNavMode != 2) layerGroupLastIndex = curLayer;
+            if (layerGroupLastIndex > 0) layerGroupLastIndex--;
+            activateLayerNavigator(2);
         }
     }
 
@@ -274,9 +340,13 @@ class Main extends luxe.Game {
         //trace(Luxe.camera.center);
 
         if (isLayerNavigatorActive) {
+            
             drawLayerNavigator();
+
             if (Luxe.screen.cursor.pos.x < 50) {
+
                 trace("mouse input");
+
                 activateLayerNavigator(layerNavMode); //keep layer navigator open
 
                 var closestLayer = 0;
@@ -304,12 +374,67 @@ class Main extends luxe.Game {
                         goToLayer(closestLayer);
                     }
                 }
+                else if (layerNavMode == 2) {
+                    layerGroupLastIndex = closestLayer;
+                }
             }
         }
 
+        if (layers.length <= 0) drawTitle();
+
         //hack to keep layers up to date
-        layers.setDepthsRecursive(0,1);
+        rootLayers.setDepthsRecursive(0,1);
     } //update
+
+    function drawTitle() {
+
+        var anchorPoint = new Vector(Luxe.screen.w * 0.2, Luxe.screen.h * 0.2);
+
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : (new Vector(0,10)).add(anchorPoint),
+            point_size : 20,
+            text : "welcome to",
+            immediate : true,
+            batcher : uiSceneBatcher
+        });
+
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : (new Vector(0,30)).add(anchorPoint),
+            point_size : 60,
+            text : "Snowglobe",
+            immediate : true,
+            batcher : uiSceneBatcher
+        });
+
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : (new Vector(0,110)).add(anchorPoint),
+            point_size : 20,
+            text : "a videogame drafting tool",
+            immediate : true,
+            batcher : uiSceneBatcher
+        });
+
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : (new Vector(0,140)).add(anchorPoint),
+            point_size : 20,
+            text : "by Adam Le Doux",
+            immediate : true,
+            batcher : uiSceneBatcher
+        });
+
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : (new Vector(0,170)).add(anchorPoint),
+            point_size : 16,
+            text : "(draw anywhere to begin)",
+            immediate : true,
+            batcher : uiSceneBatcher
+        });
+    }
 
     function drawLayerNavigator() {
         Luxe.draw.box({
@@ -324,8 +449,19 @@ class Main extends luxe.Game {
 
         for (i in 0 ... layers.length) {
             var layerH = uiSceneCamera.size.y * ( 1 - ((i+1) / (layers.length+1)) );
+            
             var isSelectedLayer = (i == curLayer);
-            var c = (isSelectedLayer) ? new Color(255,255,0) : new Color(255,255,255);
+            var isSelectedGroup = (layerNavMode == 2 && 
+                            ( (layerGroupLastIndex > curLayer && i <= layerGroupLastIndex && i > curLayer) ||
+                            (layerGroupLastIndex < curLayer && i >= layerGroupLastIndex && i < curLayer) )
+                        );
+
+            var unselectColor = new Color(1,1,1);
+            var selectColor = new Color(1,1,0);
+            if (layerNavMode == 1) selectColor = new Color(1,0,1);
+            if (layerNavMode == 2) selectColor = new Color(0,1,0);
+
+            var c = (isSelectedLayer || isSelectedGroup) ? selectColor : unselectColor;
 
             Luxe.draw.line({
                 p0: new Vector(0, layerH),
