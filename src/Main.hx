@@ -21,6 +21,7 @@ import luxe.Entity;
 import luxe.Camera;
 import luxe.Scene;
 import luxe.Timer;
+import luxe.Text;
 
 
 //HAXE
@@ -121,6 +122,14 @@ class Main extends luxe.Game {
     var layerNavMode = 0; //0 = select, 1 = move, 2 = group
     var layerGroupLastIndex = 0;
 
+
+    //new top UI
+    var helpText : String;
+    var defaultHelpText = "[O]pen, [S]ave, [W/S] Select Layer, [H]elp";
+    var helpMsgTimer : Timer = new Timer(Luxe.core);
+    public var curModeText : String;
+    public var curToolText : String;
+
     override function ready() {
 
         instance = this;
@@ -191,6 +200,7 @@ class Main extends luxe.Game {
             if (curScenePath != null && autoSaveOn && layers.length > 0) { 
                 //don't autosave a blank file, so you don't lose your autosave backup
                 trace("SAVING ...");
+                setHelpMessage("Saving...");
                 SaveAuto(curScenePath);
             } 
         }, true);
@@ -200,6 +210,9 @@ class Main extends luxe.Game {
        //undo / redo
        layerStack.push(curLayer);
        saveEditorState();
+
+       //
+       helpText = defaultHelpText;
     } //ready
 
     override function onevent(e:SystemEvent) {
@@ -294,6 +307,7 @@ class Main extends luxe.Game {
                     if (curLayer != layerGroupLastIndex) {
                         groupLayers(curLayer, layerGroupLastIndex);
                         goToLayer( (curLayer < layerGroupLastIndex) ? curLayer : layerGroupLastIndex );
+                        saveEditorState();
                     }
                     layerNavMode = 0; //return to select mode
                 }
@@ -312,6 +326,24 @@ class Main extends luxe.Game {
             if (layerNavMode != 2) layerGroupLastIndex = curLayer;
             if (layerGroupLastIndex > 0) layerGroupLastIndex--;
             activateLayerNavigator(2);
+        }
+
+        if (e.keycode == Key.key_w && e.mod.alt) {
+            if (curPoly().children.length > 0) { //not foolproof
+                editGroup(curPoly());
+            }
+        }
+        if (e.keycode == Key.key_s && e.mod.alt) {
+            if (layerStack.length > 1) {
+                exitCurrentGroup();
+            }
+        }
+
+        if (e.keycode == Key.key_u && e.mod.meta) { //ungroup
+            if (curPoly().children.length > 0) {
+                ungroupLayers(curPoly());
+                saveEditorState();
+            }
         }
     }
 
@@ -335,6 +367,13 @@ class Main extends luxe.Game {
 
     override function update(dt:Float) {
         drawGrid();
+
+        curModeText = machine.current_state.name;
+        curToolText = "tool select";
+        drawHelpText();
+        drawSceneName();
+        drawPlayPauseText();
+        drawModeText();
 
         //trace(Luxe.screen.mid);
         //trace(Luxe.camera.center);
@@ -385,6 +424,87 @@ class Main extends luxe.Game {
         //hack to keep layers up to date
         rootLayers.setDepthsRecursive(0,1);
     } //update
+
+    function drawHelpText() {
+         Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : new Vector(0,0),
+            point_size : 16,
+            text : helpText,
+            immediate : true,
+            batcher : uiSceneBatcher
+        });
+    }
+
+    public function setHelpMessage(msg) {
+        helpText = msg;
+
+        helpMsgTimer.reset();
+        helpMsgTimer.schedule(3, function() {
+            helpText = defaultHelpText; //reset message
+        });
+    }
+
+    function drawSceneName() {
+        var splitPath = (curScenePath + "").split("/");
+        var fileName = splitPath[splitPath.length - 1];
+
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : new Vector(Luxe.screen.w / 2, 0),
+            point_size : 16,
+            text : fileName,
+            immediate : true,
+            batcher : uiSceneBatcher,
+            align : TextAlign.center
+        });
+    }
+
+    function drawPlayPauseText() {
+        if (machine.current_state.name == "play") {
+            Luxe.draw.text({
+                color: new Color(1,1,1),
+                pos : new Vector(Luxe.screen.w, 0),
+                point_size : 16,
+                text : "[P]ause",
+                immediate : true,
+                batcher : playModeUIBatcher,
+                align : TextAlign.right
+            });
+        }
+        else {
+            Luxe.draw.text({
+                color: new Color(1,1,1),
+                pos : new Vector(Luxe.screen.w, 0),
+                point_size : 16,
+                text : "[P]lay",
+                immediate : true,
+                batcher : uiSceneBatcher,
+                align : TextAlign.right
+            });
+        }
+    }
+
+    function drawModeText() {
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : new Vector(Luxe.screen.w, 20),
+            point_size : 16,
+            text : "<[Q] " + curModeText + " [E]>",
+            immediate : true,
+            batcher : uiSceneBatcher,
+            align : TextAlign.right
+        });
+        Luxe.draw.text({
+            color: new Color(1,1,1),
+            pos : new Vector(Luxe.screen.w, 40),
+            point_size : 16,
+            text : "<[A] " + curToolText + " [D]>",
+            immediate : true,
+            batcher : uiSceneBatcher,
+            align : TextAlign.right
+        });
+    }
 
     function drawTitle() {
 
@@ -588,6 +708,8 @@ class Main extends luxe.Game {
         componentManager.updateFromJson(editorState.componentData);
 
         //traverse scene with layerStack to select the right polygon
+        trace(editorState.layerStack);
+        
         layerStack = editorState.layerStack;
         curLayer = layerStack[0];
         
@@ -597,22 +719,33 @@ class Main extends luxe.Game {
            curLayer = layerStack[i];
         }
         
+
         //this is bad code copy and pasting
         if (layers.length > 0) {    
             var poly : Polygon = layers[curLayer]; //cast(layers.getLayer(curLayer), Polygon);
 
+            trace(layers);
+            trace(poly);
+
             //close loop
+            
             var loop = poly.getPoints();
             var start = loop[0];
             loop.push(start);
 
+            trace(loop);
+            
+
+            
             selectedLayerOutline.setPoints(loop);
 
             polyCollision = poly.collisionBounds();
+            
         }
         else {
             selectedLayerOutline.setPoints([]);
         }
+        
     }
 
     public function wipeCurrentScene() {
@@ -688,7 +821,8 @@ class Main extends luxe.Game {
 
         playModeUIScene = new Scene("playModeUIScene");
         playModeUICamera = new Camera({name:"playModeUICamera", scene: playModeUIScene});
-        playModeUIBatcher = Luxe.renderer.create_batcher({name: "playModeUIBatcher", layer: 11, camera: playModeUICamera.view});
+        playModeUIBatcher = Luxe.renderer.create_batcher({name: "playModeUIBatcher", layer: 11, camera: uiSceneCamera.view});
+        //playModeUIBatcher = Luxe.renderer.create_batcher({name: "playModeUIBatcher", layer: 11, camera: playModeUICamera.view});
 
         /*
         Luxe.loadJSON("assets/ui/play_ui_scene2.json", function(j) {
@@ -730,32 +864,81 @@ class Main extends luxe.Game {
     	slider.visible = on;
     }
 
+    /*
+     * NEW GROUPED LAYERS CODE
+     */ 
+
+    function editGroup(parent : Polygon) {
+        layers = parent.getChildrenAsPolys();
+        localSpace = parent.transform;
+        
+        curLayer = 0;
+        layerStack.push(curLayer);
+        trace(layerStack);
+        switchLayerSelection(0); //hack
+    }
+
+    function exitCurrentGroup() {
+        if (layers[0].parent.parent != null) {
+            var newParent = cast(layers[0].parent.parent, Polygon);
+            layers = newParent.getChildrenAsPolys();
+            localSpace = newParent.transform;
+        }
+        else {
+            layers = rootLayers;
+            localSpace = new Transform(); 
+            //this is kind of a crappy hack - should I have a global root polygon??
+            //or do I need to restructure groups so they don't use empty polygons as containers???
+        }
+
+        layerStack.pop();
+        curLayer = layerStack[layerStack.length - 1];
+        trace(layerStack);
+        switchLayerSelection(0); //hack
+    }
+
+    //BUGGY AS FUCK
+    //NOTE: THIS MIGHT NOT WORK FOR DEEP LAYERS
+    function ungroupLayers(parent : Polygon) {
+        //keep track of layer indices
+        var i = curLayer;
+        var tmpParentPos = parent.pos.clone();
+        var tmpParentScale = parent.scale.clone();
+        var tmpParentRotZ = parent.rotation_z;
+
+        //remove parent
+        Edit.RemoveLayer(layers, i);
+
+        //remove children from parent and keep a list of the polygons
+        var polyList : Array<Polygon> = [];
+        for (c in parent.children) {
+            var p = cast(c, Polygon);
+            polyList.push(p);
+        }
+
+        //add polygons to parent's layer and re-adjust their transforms to new coord system
+        for (p in polyList) {
+            var worldPos = p.pos.toWorldSpace(parent.transform);
+
+            p.parent = parent.parent;
+            Edit.AddLayer(layers, p, i); //I expect this to break at lower levels
+
+            p.pos = worldPos;
+            p.scale.multiply(tmpParentScale);
+            p.rotation_z += tmpParentRotZ;
+
+            i++;
+        }
+
+        switchLayerSelection(i-1);
+    }
+
+    /*
+     * NEW GROUPED LAYERS CODE
+     */ 
+
     //COMBINE THESE TWO FUNCTION OBVIOUSLY \/\/\/\/
     public function switchLayerSelection(dir:Int) {
-        /*
-    	curLayer += dir;
-
-    	if (curLayer < 0) curLayer = 0;
-    	if (curLayer >= layers.getNumLayers()) curLayer = layers.getNumLayers()-1;
-
-    	if (layers.getNumLayers() > 0) {	
-            var poly : Polygon = cast(layers.getLayer(curLayer), Polygon);
-
-            //close loop
-	    	var loop = poly.getPoints();
-	    	var start = loop[0];
-            loop.push(start);
-
-            selectedLayerOutline.setPoints(loop);
-
-            polyCollision = poly.collisionBounds();
-    	}
-    	else {
-	    	selectedLayerOutline.setPoints([]);
-    	}
-        */
-
-
         curLayer += dir;
 
         if (curLayer < 0) curLayer = 0;
@@ -795,6 +978,8 @@ class Main extends luxe.Game {
             selectedLayerOutline.setPoints(loop);
 
             polyCollision = poly.collisionBounds();
+
+            layerStack[layerStack.length-1] = curLayer;
         }
     }
 
@@ -936,6 +1121,10 @@ class Main extends luxe.Game {
     }
 
     public function activateLayerNavigator(mode : Int) {
+        if (layerNavMode == 0) setHelpMessage("Select layer");
+        if (layerNavMode == 1) setHelpMessage("Move layer");
+        if (layerNavMode == 2) setHelpMessage("Group layers");
+
         isLayerNavigatorActive = true;
         navUpTimer.reset();
         navUpTimer.schedule(layerNavUpTime, function() {isLayerNavigatorActive = false;});
