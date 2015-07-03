@@ -118,6 +118,8 @@ class Main extends luxe.Game {
     var isLayerNavigatorActive = false;
     var layerNavUpTime = 5; //seconds
     var navUpTimer : Timer = new Timer(Luxe.core);
+    var layerNavMode = 0; //0 = select, 1 = move, 2 = group
+    var keydownDictionary = {};
 
     override function ready() {
 
@@ -239,9 +241,27 @@ class Main extends luxe.Game {
         Sys.command("open '/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl'");
         Sys.command("'/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl' ~/Code/Web/egg/index.html");
         */
+
+        if (e.keycode == Key.lshift || e.keycode == Key.rshift) {
+            if (isLayerNavigatorActive) {
+                layerNavMode = 1; //press shift to engage move mode
+            }
+        }
     }
 
     override function onkeyup(e:KeyEvent) {
+        if (e.keycode == Key.key_w || e.keycode == Key.key_s) {
+            if (e.mod.shift) {
+                saveEditorState(); //enable undo / redo for layer movement
+            }
+        }
+
+        if (e.keycode == Key.lshift || e.keycode == Key.rshift) {
+            if (layerNavMode > 0) {
+                layerNavMode = 0; //let go of shift and return to select mode
+            }
+        }
+
         if(e.keycode == Key.escape) {
             Luxe.shutdown();
         }
@@ -257,7 +277,7 @@ class Main extends luxe.Game {
             drawLayerNavigator();
             if (Luxe.screen.cursor.pos.x < 50) {
                 trace("mouse input");
-                activateLayerNavigator(); //keep layer navigator open
+                activateLayerNavigator(layerNavMode); //keep layer navigator open
 
                 var closestLayer = 0;
                 for (i in 0 ... layers.length) {
@@ -269,9 +289,26 @@ class Main extends luxe.Game {
                     }
                 }
 
-                goToLayer(closestLayer);
+                if (layerNavMode == 0) {
+                    goToLayer(closestLayer);   
+                }
+                else if (layerNavMode == 1) {
+                    if (curLayer != closestLayer) {
+
+                        //if (closestLayer > curLayer) closestLayer--;
+
+                        var p = curPoly();
+                        layers.remove(p);
+                        layers.insert(closestLayer, p);
+
+                        goToLayer(closestLayer);
+                    }
+                }
             }
         }
+
+        //hack to keep layers up to date
+        layers.setDepthsRecursive(0,1);
     } //update
 
     function drawLayerNavigator() {
@@ -301,24 +338,31 @@ class Main extends luxe.Game {
         }
     }
 
+    //I gave up on this for now - come back later
     function drawGrid() {
         //trace(Luxe.camera.zoom);
         
-        var baseGridSize = 100.0;
-        var gridSize = baseGridSize * Luxe.camera.zoom;
+        var baseGridSize = 50.0;
+        var gridSize = baseGridSize;
+        //var gridSize = baseGridSize * Luxe.camera.zoom;
 
-        var x = (-Luxe.camera.pos.x * Luxe.camera.zoom) % gridSize;
-        var y = (-Luxe.camera.pos.y * Luxe.camera.zoom) % gridSize;
+        var x = (-totalCameraDragDist.x * Luxe.camera.zoom) % gridSize;
+        var y = (-totalCameraDragDist.y * Luxe.camera.zoom) % gridSize;
 
         //trace(Luxe.camera.viewport.h);
+
+        /*
+        var zoomMult = Luxe.camera.zoom < 1.0 ? 1.0 / Luxe.camera.zoom : Luxe.camera.zoom;
+        trace("ZZZZ " + zoomMult);
+        */
 
         while (x < Luxe.screen.w) {
             Luxe.draw.line({
                 p0 : new Vector(x, 0),
                 p1 : new Vector(x, Luxe.screen.h),
-                color : new Color(1,1,1,0.3),
+                color : new Color(1,1,1,0.15),
                 immediate : true,
-                batcher : uiBatcher
+                batcher : uiSceneBatcher
             });
             x += gridSize;
         }
@@ -327,9 +371,9 @@ class Main extends luxe.Game {
             Luxe.draw.line({
                 p0 : new Vector(0, y),
                 p1 : new Vector(Luxe.screen.w, y),
-                color : new Color(1,1,1,0.3),
+                color : new Color(1,1,1,0.15),
                 immediate : true,
-                batcher : uiBatcher
+                batcher : uiSceneBatcher
             }); 
             y += gridSize;
         }
@@ -741,24 +785,25 @@ class Main extends luxe.Game {
         }
         */
 
-        if (e.keycode == Key.key_s) {
+        if (e.keycode == Key.key_s && e.mod.none) {
             //Go up a layer
             switchLayerSelection(-1);
 
-            activateLayerNavigator();
+            activateLayerNavigator(0);
         }
-        else if (e.keycode == Key.key_w) {
+        else if (e.keycode == Key.key_w && e.mod.none) {
             //Go down a layer
             switchLayerSelection(1);
 
-            activateLayerNavigator();
+            activateLayerNavigator(0);
         }
     }
 
-    public function activateLayerNavigator() {
+    public function activateLayerNavigator(mode : Int) {
         isLayerNavigatorActive = true;
         navUpTimer.reset();
         navUpTimer.schedule(layerNavUpTime, function() {isLayerNavigatorActive = false;});
+        layerNavMode = mode;
     }
 
     public function deleteLayerInput(e:KeyEvent) {
@@ -804,26 +849,25 @@ class Main extends luxe.Game {
     }
 
     public function moveLayerInput(e:KeyEvent) {
-        //OLD
-        /*
-        if (e.keycode == Key.key_q) {
+        //NEW
+        if (e.keycode == Key.key_s && e.mod.shift) {
             //Move selected layer down the stack
             if (curLayer > 0) {
-                Edit.MoveLayer(layers, curLayer, -1);
+                //Edit.MoveLayer(layers, curLayer, -1);
+                layers.swap(curLayer, curLayer - 1);
                 switchLayerSelection(-1);
+                activateLayerNavigator(1);
             }
         }
-        else if (e.keycode == Key.key_w) {
+        else if (e.keycode == Key.key_w && e.mod.shift) {
             //Move selected layer up the stack
             if (curLayer < layers.length - 1) {
-                Edit.MoveLayer(layers, curLayer, 1);    
+                //Edit.MoveLayer(layers, curLayer, 1);    
+                layers.swap(curLayer, curLayer + 1);
                 switchLayerSelection(1);
+                activateLayerNavigator(1);
             }
         }
-        */
-
-        //todo: recreate this
-        //then: saveEditorState()
     }
 
     public function recentColorsInput(e:KeyEvent) {
