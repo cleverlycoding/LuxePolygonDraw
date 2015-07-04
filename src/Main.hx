@@ -44,6 +44,7 @@ using utilities.FileInputExtender;
 using utilities.PolygonGroupExtender;
 
 import states.ComponentState;
+import states.AnimationState;
 
 class Main extends luxe.Game {
 
@@ -130,6 +131,10 @@ class Main extends luxe.Game {
     public var curModeText : String;
     public var curToolText : String;
 
+
+    //pre play state
+    var prePlayState : Dynamic;
+
     override function ready() {
 
         instance = this;
@@ -155,6 +160,7 @@ class Main extends luxe.Game {
         //UI
         createUI();
         boneBatcher = Luxe.renderer.create_batcher({name:"boneBatcher", layer:2, camera:Luxe.camera.view});  
+        Luxe.renderer.remove_batch(boneBatcher);
 
         //STATES
         machine = new States({name:"statemachine"});
@@ -213,6 +219,7 @@ class Main extends luxe.Game {
 
        //
        helpText = defaultHelpText;
+       curToolText = "tool select";
     } //ready
 
     override function onevent(e:SystemEvent) {
@@ -285,6 +292,37 @@ class Main extends luxe.Game {
         }
         layers.insert(groupLayer, parentPoly);
         rootLayers.setDepthsRecursive(0, 1);
+    }
+
+    public function getSelectedGroup() : Array<Polygon> {
+        var polysInGroup = [curPoly()];
+
+        if (layerNavMode == 2) {
+            polysInGroup = [];
+
+            var startIndex = curLayer;
+            var lastIndex = layerGroupLastIndex;
+
+            var i = 0;
+            for (l in layers) {
+
+                
+                var isSelectedGroup = ( 
+                                ( (lastIndex > startIndex && i <= lastIndex && i >= startIndex) ||
+                                (lastIndex < startIndex && i >= lastIndex && i <= startIndex) )
+                            );
+                
+
+                if (isSelectedGroup) {
+                    polysInGroup.push(l);
+                }
+
+                i++;
+
+            }
+        }
+
+        return polysInGroup;
     }
 
     override function onkeydown(e:KeyEvent) {
@@ -369,7 +407,6 @@ class Main extends luxe.Game {
         drawGrid();
 
         curModeText = machine.current_state.name;
-        curToolText = "tool select";
         drawHelpText();
         drawSceneName();
         drawPlayPauseText();
@@ -1817,6 +1854,10 @@ class Main extends luxe.Game {
 
         Luxe.renderer.add_batch(playModeUIBatcher);
         componentManager.activateComponents(playModeUIScene);
+
+        autoSaveOn = false;
+        prePlayState = getEditorState();
+        //saveEditorState();
     }
 
     public function exitPlayMode() {
@@ -1824,6 +1865,10 @@ class Main extends luxe.Game {
 
         Luxe.renderer.remove_batch(playModeUIBatcher);
         componentManager.deactivateComponents(playModeUIScene);
+
+        autoSaveOn = true;
+        recreateEditorState(prePlayState);
+        //redo();
     }
 
     public function addSelectedLayerToComponentManagerInput(e : KeyEvent) {
@@ -2067,6 +2112,7 @@ class PickColorState extends State {
     }
 }  
 
+/*
 class AnimationState extends State {
     var main : Main;
 
@@ -2293,6 +2339,7 @@ class AnimationState extends State {
         selectedBone.color = new Color(255,255,0);
     }
 }
+*/
 
 class PlayState extends State {
 

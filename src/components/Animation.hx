@@ -9,15 +9,6 @@ import animation.Bone;
 using utilities.TransformExtender;
 using utilities.VectorExtender;
 
-/*
-typedef VertexBoneMapping = {
-	public var vertexIndex : Int;
-	public var boneIndex : Int;
-	public var localPos : Vector;
-}
-*/
-
-
 typedef VertexBoneMapping = {
 	public var vertex : Int;
 	public var bones : Array<Int>;
@@ -25,20 +16,17 @@ typedef VertexBoneMapping = {
 	public var displacements : Array<Vector>;
 }
 
-
 class Animation extends EditorComponent {
 	
 	var polygon : Polygon;
 
-	public var skeletonRoot (default, set) : Bone;
+	//public var skeletonRoot (default, set) : Bone;
 	var skeleton : Array<Bone>;
 
 	var skeletonMap : Array<VertexBoneMapping>;
 
-	public var maxInfluenceDistance : Float = 200; //distance within which vertices are influenced by bones
-
 	//DEBUG
-	var isDebug = true;
+	var isDebug = false;
 
 	override function init() {
 		polygon = cast entity;
@@ -46,19 +34,10 @@ class Animation extends EditorComponent {
 
 	override function update(dt : Float) {
 		for (mapping in skeletonMap) {
-
-			/*
-			var bone = skeleton[mapping.boneIndex];
-			
-			var worldPos = bone.transform.localVectorToWorldSpace(mapping.localPos);
-			var vertPos = polygon.transform.worldVectorToLocalSpace(worldPos);
-
-			polygon.geometry.vertices[mapping.vertexIndex].pos = vertPos;
-			*/
-
 			
 			var weightedVertPos = new Vector(0,0);
 
+			
 			for (i in 0 ... mapping.bones.length) {
 
 				var bone = skeleton[mapping.bones[i]];
@@ -68,7 +47,6 @@ class Animation extends EditorComponent {
 				var vertPos = polygon.transform.worldVectorToLocalSpace(worldPos);
 
 				weightedVertPos.add(vertPos.multiplyScalar(weight));
-
 			}
 
 			polygon.geometry.vertices[mapping.vertex].pos = weightedVertPos;
@@ -93,6 +71,7 @@ class Animation extends EditorComponent {
 		}
 	}
 
+	/*
 	function set_skeletonRoot(root : Bone) : Bone {
 		skeletonRoot = root;
 
@@ -100,6 +79,12 @@ class Animation extends EditorComponent {
 		mapMeshToSkeleton();
 
 		return skeletonRoot;
+	}
+	*/
+
+	public function setBones(bones : Array<Bone>) {
+		skeleton = bones;
+		mapMeshToSkeleton();
 	}
 
 	function mapMeshToSkeleton() {
@@ -115,6 +100,7 @@ class Animation extends EditorComponent {
 			var closestBone = 0;
 			var closestDist = skeleton[closestBone].closestWorldPoint(vertWorldPos).distance(vertWorldPos);
 
+			
 			var closeBones = [];
 			var closeDistList = [];
 
@@ -129,70 +115,18 @@ class Animation extends EditorComponent {
 				}
 
 				
-				if (curDist < maxInfluenceDistance) {
+				//if (curDist < maxInfluenceDistance) {
 					closeBones.push(j);
+					
 					closeDistList.push(curDist);
-				}
-				
+				//}
 
 				j++;
 			}
 
-			/*
-			var posRelToBone = skeleton[closestBone].transform.worldVectorToLocalSpace(vertWorldPos);
+			closeBones = [closestBone];
 
-			//create mapping
-			var mapping = {vertexIndex : i, boneIndex : closestBone, localPos : posRelToBone};
-			skeletonMap.push(mapping);
-			*/
-
-			
-			//in case no bones are closer than maxInfluenceDistance
-			if (closeBones.length == 0) {
-				closeBones.push(closestBone);
-				closeDistList.push(closestDist);
-			}
-
-			//calc weights
-			var totalDist = 0.0;
-			for (d in closeDistList) {
-				totalDist += d;
-			}
-			var weights = closeDistList.map(function(d) { return (1 - (d / totalDist)); });
-
-			//inelegant hack
-			if (weights.length == 1) weights = [1.0];
-
-
-			//debug
-			var inbetweenBone = (weights.length > 1);
-			if (inbetweenBone) trace("weights");
-			if (inbetweenBone) trace(weights);
-
-			//another inelegant hack ( for renormalization )
-
-			/*
-			var totalWeight = 0.0;
-			for (w in weights) {
-				totalWeight += w;
-			}
-
-			if (Math.abs(totalWeight - 1) > 0.01) trace("F****CK");
-
-			if (inbetweenBone) trace(totalWeight);
-
-			weights = weights.map(function(w) { return w / totalWeight; });
-
-			totalWeight = 0.0;
-			for (w in weights) {
-				totalWeight += w;
-			}
-
-			if (inbetweenBone) trace(weights);
-			if (inbetweenBone) trace(totalWeight);
-			*/
-
-			
+			var weights = [1.0];
 
 			//calc displacements
 			var displacements = closeBones.map(function(b) { return skeleton[b].transform.worldVectorToLocalSpace(vertWorldPos); });
@@ -209,16 +143,6 @@ class Animation extends EditorComponent {
 
 			i++;
 		}
-
-		//trace(skeletonMap);
-
-		/*
-		for (m in skeletonMap) {
-			trace(m.weights);
-			trace(m.bones);
-			trace("---");
-		}
-		*/
 
 	}
 }

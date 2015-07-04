@@ -1,8 +1,7 @@
 {
     "components": [
         {
-            "rotationSpeed": 10,
-            "name": "TestRotationComponent"
+            "name": "ShimmerComponent"
         }
     ],
     "name": "id0"

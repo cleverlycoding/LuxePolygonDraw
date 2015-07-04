@@ -62,7 +62,7 @@ class ComponentState extends State {
             //basic info
             Luxe.draw.text({
                 color: new Color(1,1,1),
-                pos : new Vector(0,0),
+                pos : new Vector(0,0+20),
                 point_size : 16,
                 text : "Name: " + main.curPoly().name,
                 immediate : true,
@@ -71,7 +71,7 @@ class ComponentState extends State {
 
             Luxe.draw.text({
                 color: new Color(1,1,1),
-                pos : new Vector(0,16),
+                pos : new Vector(0,16+20),
                 point_size : 16,
                 text : "Edit component [f]ile",
                 immediate : true,
@@ -80,7 +80,7 @@ class ComponentState extends State {
 
             Luxe.draw.text({
                 color: new Color(1,1,1),
-                pos : new Vector(0,32),
+                pos : new Vector(0,32+20),
                 point_size : 16,
                 text : "---",
                 immediate : true,
@@ -89,7 +89,7 @@ class ComponentState extends State {
 
             Luxe.draw.text({
                 color: new Color(1,1,1),
-                pos : new Vector(0,48),
+                pos : new Vector(0,48+20),
                 point_size : 16,
                 text : "Add new [c]omponent",
                 immediate : true,
@@ -101,7 +101,7 @@ class ComponentState extends State {
             for (cName in componentNames) {
                 Luxe.draw.text({
                     color: new Color(1,1,1),
-                    pos : new Vector(0, 64 + (i * 16)),
+                    pos : new Vector(0, 64 + (i * 16) + 20),
                     point_size : 16,
                     text : cName,
                     immediate : true,

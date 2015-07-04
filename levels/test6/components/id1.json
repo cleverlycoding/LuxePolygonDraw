@@ -1,8 +1,8 @@
 {
     "components": [
         {
-            "rotationSpeed": 10,
-            "name": "TestRotationComponent"
+            "name": "TestRotationComponent",
+            "rotationSpeed": 10
         }
     ],
     "name": "id1"

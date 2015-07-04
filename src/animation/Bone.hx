@@ -57,6 +57,8 @@ class Bone extends Visual {
 			this.rotation_z = rotation_z;
 		}
 
+		trace("Batcher");
+		trace(_options.batcher);
 		geometry = new Geometry({
 			batcher : _options.batcher,
 			primitive_type : PrimitiveType.triangles
