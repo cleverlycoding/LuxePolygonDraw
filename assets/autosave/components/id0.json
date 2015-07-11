@@ -1,7 +1,10 @@
 {
     "components": [
         {
-            "name": "ShimmerComponent"
+            "boneNames": [
+                "Bone.cIRgI"
+            ],
+            "name": "Rigging"
         }
     ],
     "name": "id0"

@@ -127,7 +127,8 @@ class ComponentManager {
 		return getComponentsOnlyFromScene(scene);
 	}
 
-	public function activateComponents(?scene : Scene) {
+	//the typeName thing is a fucking hack btw, please remove, kthx
+	public function activateComponents(?scene : Scene, ?typeName : String) {
 		if (scene == null) scene = Luxe.scene;
 
 		trace("ACTIVATE");
@@ -140,8 +141,17 @@ class ComponentManager {
 			if (e != null) {
 				for (c in entry.components) {
 					trace("c " + c.name);
-					var newComponent:Component = Type.createInstance(Type.resolveClass("components." + c.name), [c]);
-					e.add(newComponent);
+					if (e.has(c.name)) {
+						//later: remove and re-add???
+					}
+					else {
+
+						if (typeName == null || c.name == typeName) {
+							var newComponent:Component = Type.createInstance(Type.resolveClass("components." + c.name), [c]);
+							e.add(newComponent);
+						}
+
+					}
 				}
 			}
 			
@@ -157,7 +167,7 @@ class ComponentManager {
 			var e = scene.entities.get(entry.name);
 			if (e != null) {
 				for (c in entry.components) {
-					e.remove(c.name);
+					if (e.has(c.name)) e.remove(c.name);
 				}
 			}
 		}

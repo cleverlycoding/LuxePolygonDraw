@@ -12,7 +12,7 @@ import luxe.Color;
 import luxe.utils.Maths;
 
 import animation.Bone;
-import components.Animation;
+import components.Rigging;
 import components.PuppetAnimation;
 
 using utilities.VectorExtender;
@@ -45,6 +45,8 @@ class AnimationState extends State {
     var multiselectBones : Array<Bone> = [];
 
     function updateBoneArray() {
+        boneArray = main.getAllBonesInScene();
+        /*
         boneArray = [];
 
         var rootBones : Array<Entity> = [];
@@ -54,6 +56,7 @@ class AnimationState extends State {
             var root = cast b;
             boneArray = boneArray.concat(root.skeleton());
         }
+        */
     }
 
     override function init() {
@@ -68,6 +71,9 @@ class AnimationState extends State {
         if (toolMode == 0) main.curToolText = "skeleton";
         if (toolMode == 1) main.curToolText = "rigging";
         if (toolMode == 2) main.curToolText = "animation";
+
+        //haaaaaaack
+        main.componentManager.activateComponents(Luxe.scene, "Rigging");
 
     } //onenter
 
@@ -121,8 +127,16 @@ class AnimationState extends State {
                             }
                         }
                         else {
-                            multiselectBones.push(b);
-                            b.color = new Color(0.7, 0, 1);
+                            if (Luxe.input.keydown(Key.lalt)) {
+                                multiselectBones = multiselectBones.concat(b.skeleton());
+                                for (mb in multiselectBones) {
+                                    mb.color = new Color(0.7, 0, 1);
+                                }
+                            }
+                            else {
+                                multiselectBones.push(b);
+                                b.color = new Color(0.7, 0, 1);
+                            }
                         }
                     }
                 }
@@ -215,16 +229,23 @@ class AnimationState extends State {
             });
         }
 
-        /*
-        Luxe.draw.text({
-            color: new Color(255,255,255),
-            pos : new Vector(Luxe.screen.mid.x, 30),
-            point_size : 20,
-            text : "Frame: " + curFrame,
-            immediate : true,
-            batcher : main.uiBatcher
-        });
-        */
+        //old
+        if (toolMode == 2) { //animation
+            Luxe.draw.text({
+                color: new Color(255,255,255),
+                pos : new Vector(Luxe.screen.mid.x, 30),
+                point_size : 20,
+                text : "Frame: " + curFrame,
+                immediate : true,
+                batcher : main.uiBatcher
+            });
+        }
+
+        if (toolMode == 1) { //rigging
+            if (main.curPoly() != null && main.curPoly().has("Rigging")) {
+                cast(main.curPoly().get("Rigging"), Rigging).drawRigging();
+            }
+        }
 
     }
 
@@ -274,26 +295,26 @@ class AnimationState extends State {
         main.zoomInput(e);
 
         //old animation
-        /*
-        if (boneArray.length > 0) {
+        if (boneArray.length > 0 && toolMode == 2) {
             var skeletonRoot = boneArray[0];
 
-            if (e.keycode == Key.equals) {
+            if (e.keycode == Key.leftbracket) {
                 curFrame++;
                 skeletonRoot.frameIndex = curFrame;
             }
-            else  if (e.keycode == Key.minus) {
+            else  if (e.keycode == Key.rightbracket) {
                 curFrame--;
                 skeletonRoot.frameIndex = curFrame;
             }
 
             curFrame = skeletonRoot.frameIndex; //make sure we don't get a mismatch or go out of bounds
 
+            /*
             if (e.keycode == Key.key_a) {
                 skeletonRoot.animate(1);
             }
+            */
         }
-        */
 
         if (selectedBone != null) {
             if (e.keycode == Key.key_p) { //delete selected bone
@@ -348,9 +369,34 @@ class AnimationState extends State {
             if (e.keycode == Key.key_r && e.mod.ctrl && multiselectBones.length > 0) { //rig poly w/ selected bones
                
                 for (p in main.getSelectedGroup()) {
-                    if (p.has("Animation")) p.remove("Animation");
-                    p.add(new Animation({name: "Animation"}));
-                    cast(p.get("Animation"), Animation).setBones(multiselectBones);
+                    trace(p);
+
+                    //if (p.has("Animation")) p.remove("Animation");
+                    if (!p.has("Rigging")) {
+                        p.add(new Rigging({name: "Rigging"}));
+                        main.componentManager.addComponent(cast(p, Entity), "Rigging");
+                    }
+                    
+                    //cast(p.get("Animation"), Animation).setBones(multiselectBones);
+                    
+                    cast(p.get("Rigging"), Rigging).addBones(multiselectBones);
+                }
+
+                /*
+                main.curPoly().add(new Animation({name: "Animation"}));
+                cast(main.curPoly().get("Animation"), Animation).setBones(multiselectBones);
+                */
+            }
+
+            if (e.keycode == Key.key_r && e.mod.alt && multiselectBones.length > 0) { //rig poly w/ selected bones
+               
+                for (p in main.getSelectedGroup()) {
+                    
+                    //cast(p.get("Animation"), Animation).setBones(multiselectBones);
+                    if (p.has("Rigging")) {
+                        cast(p.get("Rigging"), Rigging).removeBones(multiselectBones);
+                    }
+                    
                 }
 
                 /*

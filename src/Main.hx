@@ -34,7 +34,7 @@ import sys.io.FileInput;
 //ARL
 import animation.Bone;
 
-import components.Animation;
+import components.Rigging;
 import components.PuppetAnimation;
 
 using utilities.VectorExtender;
@@ -325,12 +325,32 @@ class Main extends luxe.Game {
         return polysInGroup;
     }
 
+    public function getAllBonesInScene() {
+        var boneArray : Array<Bone> = [];
+
+        var rootBones : Array<Entity> = [];
+        Luxe.scene.get_named_like("Bone.*", rootBones); //find root bones
+
+        for (b in rootBones) {
+            var root = cast b;
+            boneArray = boneArray.concat(root.skeleton());
+        }
+
+        return boneArray;
+    }
+
     override function onkeydown(e:KeyEvent) {
         //practice opening files from command line
         /*
         Sys.command("open '/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl'");
         Sys.command("'/Applications/Sublime Text 3.app/Contents/SharedSupport/bin/subl' ~/Code/Web/egg/index.html");
         */
+
+
+        //HACK temp etc etc
+        if (e.keycode == Key.key_7 && e.mod.meta) {
+            getAllBonesInScene()[0].animate(1);
+        }
 
         if (e.keycode == Key.lshift || e.keycode == Key.rshift) {
             if (isLayerNavigatorActive) {
@@ -1871,6 +1891,7 @@ class Main extends luxe.Game {
         //redo();
     }
 
+    //TODO this is misnamed
     public function addSelectedLayerToComponentManagerInput(e : KeyEvent) {
         //HACK IOS
         
