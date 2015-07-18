@@ -9,6 +9,8 @@ import phoenix.Batcher; //necessary to access PrimitiveType
 import luxe.collision.shapes.Polygon in CollisionPoly;
 import luxe.collision.ShapeDrawerLuxe;
 
+import Type;
+
 using utilities.VectorExtender;
 using utilities.PolylineExtender;
 using utilities.TransformExtender;
@@ -202,6 +204,8 @@ class Polygon extends Visual {
 	*/
 
 	function calculateBounds() : Rectangle {
+		//old version
+		/*
 		var xMin = 0.0;
 		var xMax = 0.0;
 		var yMin = 0.0;
@@ -212,6 +216,16 @@ class Polygon extends Visual {
 		for (child in children) { //ADD ALL THE POINTS ( from children )
 			allPoints = allPoints.concat( cast(child, Polygon).points.clone() );
 		}
+		*/
+		
+
+		//new version
+		var allPoints = getPoints().clone(); //clone for safety probs unecessary
+
+		var xMin = allPoints[0].x;
+		var xMax = allPoints[0].x;
+		var yMin = allPoints[0].y;
+		var yMax = allPoints[0].y;
 
 		for (p in allPoints) {
 			xMin = Math.min(xMin, p.x);
@@ -229,7 +243,11 @@ class Polygon extends Visual {
 	}
 
 	public function getRectBounds() : Rectangle {
+
+		//this was fucked up so I'm skipping it
+
 		//probably not the best place to put this
+		/*
 		bounds = calculateBounds(); //local bounds
 
 		var pos = new Vector(bounds.x, bounds.y);
@@ -237,6 +255,9 @@ class Polygon extends Visual {
 		pos = pos.toWorldSpace(transform);
 		size = size.multiply(transform.scale); //is there a better way of doing this?
 		return new Rectangle(pos.x, pos.y, size.x, size.y);
+		*/
+
+		return calculateBounds();
 	}
 
 	public function getRectCollisionBounds() : CollisionPoly {
@@ -248,6 +269,20 @@ class Polygon extends Visual {
 		//sdrwr.drawShape(cp, new Color(1,0,0), false);
 
 		return cp;
+	}
+
+	public function drawRectBounds() {
+		var r = getRectBounds();
+		trace(r);
+
+		Luxe.draw.rectangle({
+			x : r.x,
+			y : r.y,
+			w : r.w,
+			h : r.h,
+            immediate : true,
+            color : new Color(1,1,1,0.5)
+		});
 	}
 
 	//REPLACE THIS WITH set_points ???
@@ -377,7 +412,9 @@ class Polygon extends Visual {
 	public function getChildrenAsPolys() : Array<Polygon> {
 		var polyList : Array<Polygon> = [];
 		for (c in children) {
-			polyList.push(cast(c, Polygon));
+			if (Std.is(c, Polygon)) { //only get polygons
+				polyList.push(cast(c, Polygon));
+			}
 		}
 		return polyList;
 	}

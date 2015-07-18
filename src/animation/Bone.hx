@@ -33,13 +33,48 @@ class Bone extends Visual {
 	public var frames : Array<BoneFrameData> = [];
 	public var frameIndex (default, set) : Int = 0;
 	var isAnimating : Bool;
-	
-	override public function new(_options : luxe.options.VisualOptions, length : Float, rotation_z : Float, ?jsonObj) {
-		
-		if (jsonObj != null) {
-			_options.name = jsonObj.name;
+
+	public static function createFromJson(json) : Bone {
+
+		//find parent ( if it has one )
+		var p = null;
+		if (json.parent != "null") {
+
+			for (sceneBone in Main.instance.getAllBonesInScene()) {
+				if (sceneBone.name == json.parent) {
+					p = sceneBone;
+				}
+			}
 		}
-		else {
+
+		//recreate bone
+		var b = new Bone(
+			{
+				name : json.name,
+				pos : new Vector(json.pos.x, json.pos.y),
+				parent : p, //this might be null
+				batcher : Main.instance.boneBatcher, //this might be too rigid
+			},
+			json.length,
+			json.frames[0] //start rotation at frame 0
+		);
+
+		//set up frames
+		var i = 0;
+		for (f in json.frames) {
+
+			b.frameIndex = i;
+			b.rotation_z = f;
+
+			i++;
+		}
+		b.frameIndex = 0; //return to frame 0
+
+		return b; //return the recreated bone
+	}
+	
+	override public function new(_options : luxe.options.VisualOptions, length : Float, rotation_z : Float) {
+		if (_options.name == null) { //create new name if none is supplied
 			_options.name = "Bone";
 			_options.name_unique = true;
 		}
@@ -48,14 +83,8 @@ class Bone extends Visual {
 
 		trace(this.name);
 
-		if (jsonObj != null) {
-			this.length = jsonObj.length;
-			this.rotation_z = jsonObj.frames[0];
-		}
-		else {	
-			this.length = length;
-			this.rotation_z = rotation_z;
-		}
+		this.length = length;
+		this.rotation_z = rotation_z;
 
 		trace("Batcher");
 		trace(_options.batcher);
@@ -82,12 +111,7 @@ class Bone extends Visual {
 		geometry.color = new Color(255,255,255);
 
 		//start keeping track of frames
-		if (jsonObj != null) {
-			for (rot in jsonObj.frames) {
-				frames.push({length: this.length, rotation_z: rot});
-			}
-		}
-		else if (parent != null) {
+		if (parent != null) {
 			for (i in 0 ... cast(parent).frames.length) { //make sure the bones has the same # of frames as parent
 				frames.push({length : this.length, rotation_z : this.rotation_z});
 			}
@@ -273,6 +297,13 @@ class Bone extends Visual {
 		for ( f in frames ) {
 			jsonFrames.push(f.rotation_z);
 		}
-		return {name: this.name, parent: this.parent.name, length: this.length, frames: jsonFrames};
+
+		return {
+			name: this.name, 
+			parent: ( this.parent == null ? "null" : this.parent.name ),
+			pos : {x: this.pos.x, y: this.pos.y}, 
+			length: this.length, 
+			frames: jsonFrames
+		};
 	}
 }

@@ -64,7 +64,6 @@ class AnimationState extends State {
 
     override function onenter<T>( _main:T ) {
         main = cast(_main, Main);
-        trace("hi");
         Luxe.renderer.add_batch(main.boneBatcher);
 
         //stupid copy paste
@@ -72,8 +71,12 @@ class AnimationState extends State {
         if (toolMode == 1) main.curToolText = "rigging";
         if (toolMode == 2) main.curToolText = "animation";
 
+
+        updateBoneArray();
+        selectedBone = null;
+
         //haaaaaaack
-        main.componentManager.activateComponents(Luxe.scene, "Rigging");
+        //main.componentManager.activateComponents(Luxe.scene, "Rigging");
 
     } //onenter
 
@@ -196,6 +199,23 @@ class AnimationState extends State {
                 
                 selectBone(b);
             }
+            /*else if (main.getGroupParent() != null) {
+
+                //I guess we'll see if this works, but I'm skeptical D:
+                var groupRoot = main.getGroupParent();
+
+                var b = new Bone({
+                        pos : startPos.toLocalSpace(groupRoot.transform), 
+                        parent : groupRoot,
+                        batcher : main.boneBatcher
+                    }, 
+                    startPos.distance(endPos),
+                    groupRoot.transform.worldRotationToLocalRotationZ( Maths.degrees(endPos.clone().subtract(startPos).angle2D) - 90 )
+                );
+                
+                selectBone(b);
+
+            }*/
             else {
 
                 var b = new Bone({

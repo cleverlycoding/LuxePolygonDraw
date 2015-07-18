@@ -255,6 +255,12 @@ class Main extends luxe.Game {
         }
     }
 
+    //kind of a hack
+    public function getGroupParent() : Polygon {
+        if (layers.length <= 0) return null;
+        return cast(layers[0].parent, Polygon);
+    }
+
     public function groupLayers(startIndex, lastIndex) {
         var groupLayer = cast( Math.min(startIndex, lastIndex), Int );
 
@@ -330,6 +336,8 @@ class Main extends luxe.Game {
 
         var rootBones : Array<Entity> = [];
         Luxe.scene.get_named_like("Bone.*", rootBones); //find root bones
+
+        trace(rootBones);
 
         for (b in rootBones) {
             var root = cast b;
@@ -431,6 +439,8 @@ class Main extends luxe.Game {
         drawSceneName();
         drawPlayPauseText();
         drawModeText();
+
+        if (getGroupParent() != null) getGroupParent().drawRectBounds();
 
         //trace(Luxe.screen.mid);
         //trace(Luxe.camera.center);
@@ -726,6 +736,7 @@ class Main extends luxe.Game {
         var editorState = {
             sceneData : layers.jsonRepresentation(),
             componentData : componentManager.jsonRepresentation(),
+            skeletonData : getAllSkeletonData(),
             layerStack : layerStackCopy
         };
 
@@ -802,6 +813,13 @@ class Main extends luxe.Game {
         else {
             selectedLayerOutline.setPoints([]);
         }
+
+        //recreate skeletons
+        for (skel in cast(editorState.skeletonData, Array<Dynamic>) ) {
+            for (b in cast(skel, Array<Dynamic>) ) {
+                Bone.createFromJson(b); //god I hope this works
+            }
+        }
         
     }
 
@@ -814,6 +832,10 @@ class Main extends luxe.Game {
         layers = [];
         //delete all components
         componentManager.componentData = [];
+        //delete all bones
+        for ( b in getAllBonesInScene() ) {
+            b.destroy();
+        }
     }
     /*
      * NEW UNDO / REDO
@@ -1321,6 +1343,7 @@ class Main extends luxe.Game {
 
         sys.FileSystem.createDirectory(path);
         sys.FileSystem.createDirectory(path + "/components");
+        sys.FileSystem.createDirectory(path + "/skeletons");
 
         //scene file
         var output = File.write(path + "/" + fileName + ".scene", false);
@@ -1342,15 +1365,79 @@ class Main extends luxe.Game {
             output.close();
         }
 
+        //bone files
+        /*
+        var rootBones : Array<Entity> = [];
+        Luxe.scene.get_named_like("Bone.*", rootBones); //find root bones
+
+        var i = 0;
+
+        for (r in rootBones) {
+
+            //get skeleton data
+            var jsonSkel = [];
+
+            var root = cast(r, Bone);
+            for (b in root.skeleton()) {
+                jsonSkel.push(b.jsonRepresentation());
+            }
+
+            //write skeleton data to file
+            var output = File.write(path + "/skeletons/sk" + i + ".json", false); //bad naming convention (name after parent?)
+            var outStr = haxe.Json.stringify(jsonSkel);
+            output.writeString(outStr);
+            output.close();
+
+            i++;
+        }
+        */
+        var i = 0;
+        for (jsonSkel in getAllSkeletonData()) {
+            var output = File.write(path + "/skeletons/sk" + i + ".json", false); //bad naming convention (name after parent?)
+            var outStr = haxe.Json.stringify(jsonSkel);
+            output.writeString(outStr);
+            output.close();
+
+            i++;
+        }
+
+        //keep track of changes in current scene
         if (curScenePath != null) Luxe.core.app.io.platform.watch_remove(curScenePath);
         curScenePath = path;
         Luxe.core.app.io.platform.watch_add(curScenePath);
+    }
+
+    //definitely put this elsewhere :(
+    public function getAllSkeletonData() {
+        var allSkeletons = [];
+
+        var rootBones : Array<Entity> = [];
+        Luxe.scene.get_named_like("Bone.*", rootBones); //find root bones
+
+        for (r in rootBones) {
+
+            //get skeleton data
+            var jsonSkel = [];
+
+            var root = cast(r, Bone);
+            for (b in root.skeleton()) {
+                jsonSkel.push(b.jsonRepresentation());
+            }
+
+            allSkeletons.push(jsonSkel);
+        }
+
+        return allSkeletons;
     }
 
     public function Save() {
         //save
         var rawPath = Luxe.core.app.io.platform.dialog_save().split(".");
         var path = rawPath[0];
+
+        SaveAuto(path);
+
+        /*
         var splitPath = (path + "").split("/");
         var fileName = splitPath[splitPath.length - 1];
 
@@ -1460,6 +1547,28 @@ class Main extends luxe.Game {
                 var inObj = haxe.Json.parse(inStr);
 
                 componentManager.addComponentFromJson(inObj);
+
+                input.close();
+            }
+
+            //bones & animations
+            var skeletonFiles = sys.FileSystem.readDirectory(path + "skeletons");
+
+            for (skelFile in skeletonFiles) {
+
+                var input = File.read(path + "skeletons/" + skelFile, false);
+
+                //read all - regardless of how many lines it is
+                var inStr = "";
+                while (!input.eof()) {
+                    inStr += input.readLine();
+                }
+
+                var inObj = haxe.Json.parse(inStr);
+
+                for (boneData in cast(inObj, Array<Dynamic>)) {
+                    Bone.createFromJson(boneData);
+                }
 
                 input.close();
             }

@@ -36,32 +36,11 @@ class Rigging extends EditorComponent {
 
 	override public function new(_options:ComponentOptions) {
 		super(_options);
-		
-			
-		trace(boneNames); //= null???
-			
-		//this breaks shit to hell
-		//if (boneNames.length > 0) {
-			//for (n in boneNames) {
-			//	trace(n);
-				//trace(Luxe.scene.entities.get(n));
-				//boneList.push( cast( Luxe.scene.entities.get(n), Bone ) );
-			//}
-		//}
-
-		//if (boneList.length > 0) mapMeshToBones(); 
 	}
 
 	override function init() {
 		polygon = cast entity;
 
-		/*
-		for (n in boneNames) {
-			boneList.push( cast( Luxe.scene.entities.get(n), Bone ) );
-		}
-		*/
-
-		if (boneList.length > 0) mapMeshToBones();
 	}
 
 	override function update(dt : Float) {
@@ -102,25 +81,6 @@ class Rigging extends EditorComponent {
 
 		}
 	}
-
-	/*
-	function set_boneListRoot(root : Bone) : Bone {
-		boneListRoot = root;
-
-		boneList = root.boneList();
-		mapMeshToBones();
-
-		return boneListRoot;
-	}
-	*/
-
-	/*
-	public function setBones(bones : Array<Bone>) {
-		boneList = bones;
-		mapMeshToBones();
-	}
-
-	*/
 
 	public function drawRigging() {
 		for (mapping in boneListMap) {

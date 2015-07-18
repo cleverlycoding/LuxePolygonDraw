@@ -95,7 +95,6 @@ class AddLayerEdit extends Edit {
 			}
 
 			cast(parent, Polygon).recenter();
-			//layer.parent = parent;
 		}
 		else {
 			layerList.insert(layerIndex, layer);	
