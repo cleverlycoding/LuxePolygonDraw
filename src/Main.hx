@@ -337,7 +337,7 @@ class Main extends luxe.Game {
         var rootBones : Array<Entity> = [];
         Luxe.scene.get_named_like("Bone.*", rootBones); //find root bones
 
-        trace(rootBones);
+        //trace(rootBones);
 
         for (b in rootBones) {
             var root = cast b;
@@ -765,6 +765,14 @@ class Main extends luxe.Game {
     public function recreateEditorState(editorState : Dynamic) {
         wipeCurrentScene();
     
+
+        //recreate skeletons (do this first to avoid sad bad errors)
+        for (skel in cast(editorState.skeletonData, Array<Dynamic>) ) {
+            for (b in cast(skel, Array<Dynamic>) ) {
+                Bone.createFromJson(b); //god I hope this works
+            }
+        }
+
         //recreate layers from json
         //if (editorState.sceneData)
         for (p in (new Array<Polygon>()).createFromJson(editorState.sceneData)) {
@@ -786,7 +794,6 @@ class Main extends luxe.Game {
            layers = groupParent.getChildrenAsPolys();
            curLayer = layerStack[i];
         }
-        
 
         //this is bad code copy and pasting
         if (layers.length > 0) {    
@@ -812,13 +819,6 @@ class Main extends luxe.Game {
         }
         else {
             selectedLayerOutline.setPoints([]);
-        }
-
-        //recreate skeletons
-        for (skel in cast(editorState.skeletonData, Array<Dynamic>) ) {
-            for (b in cast(skel, Array<Dynamic>) ) {
-                Bone.createFromJson(b); //god I hope this works
-            }
         }
         
     }
@@ -1515,6 +1515,29 @@ class Main extends luxe.Game {
             }
 
             //
+
+            //bones & animations (this might have to go first in order things not to break *shrugs with evil nonchalance and flips you the bird*)
+            var skeletonFiles = sys.FileSystem.readDirectory(path + "skeletons");
+
+            for (skelFile in skeletonFiles) {
+
+                var input = File.read(path + "skeletons/" + skelFile, false);
+
+                //read all - regardless of how many lines it is
+                var inStr = "";
+                while (!input.eof()) {
+                    inStr += input.readLine();
+                }
+
+                var inObj = haxe.Json.parse(inStr);
+
+                for (boneData in cast(inObj, Array<Dynamic>)) {
+                    Bone.createFromJson(boneData);
+                }
+
+                input.close();
+            }
+
             //scene file
             var input = File.read(path + fileName + ".scene", false);
 
@@ -1547,28 +1570,6 @@ class Main extends luxe.Game {
                 var inObj = haxe.Json.parse(inStr);
 
                 componentManager.addComponentFromJson(inObj);
-
-                input.close();
-            }
-
-            //bones & animations
-            var skeletonFiles = sys.FileSystem.readDirectory(path + "skeletons");
-
-            for (skelFile in skeletonFiles) {
-
-                var input = File.read(path + "skeletons/" + skelFile, false);
-
-                //read all - regardless of how many lines it is
-                var inStr = "";
-                while (!input.eof()) {
-                    inStr += input.readLine();
-                }
-
-                var inObj = haxe.Json.parse(inStr);
-
-                for (boneData in cast(inObj, Array<Dynamic>)) {
-                    Bone.createFromJson(boneData);
-                }
 
                 input.close();
             }

@@ -262,8 +262,16 @@ class AnimationState extends State {
         }
 
         if (toolMode == 1) { //rigging
+
+            //OLD version
+            /*
             if (main.curPoly() != null && main.curPoly().has("Rigging")) {
                 cast(main.curPoly().get("Rigging"), Rigging).drawRigging();
+            }
+            */
+
+            if (main.curPoly() != null && main.curPoly().rigging.rigged()) {
+                main.curPoly().rigging.drawRigging();
             }
         }
 
@@ -389,9 +397,14 @@ class AnimationState extends State {
             if (e.keycode == Key.key_r && e.mod.ctrl && multiselectBones.length > 0) { //rig poly w/ selected bones
                
                 for (p in main.getSelectedGroup()) {
-                    trace(p);
+
+                    //OLD version
+                    /*
+                    //trace(p);
 
                     //if (p.has("Animation")) p.remove("Animation");
+
+                    
                     if (!p.has("Rigging")) {
                         p.add(new Rigging({name: "Rigging"}));
                         main.componentManager.addComponent(cast(p, Entity), "Rigging");
@@ -400,6 +413,9 @@ class AnimationState extends State {
                     //cast(p.get("Animation"), Animation).setBones(multiselectBones);
                     
                     cast(p.get("Rigging"), Rigging).addBones(multiselectBones);
+                    */
+
+                    p.rigging.addBones(multiselectBones);
                 }
 
                 /*
@@ -412,9 +428,18 @@ class AnimationState extends State {
                
                 for (p in main.getSelectedGroup()) {
                     
+                    //OLD version
+                    /*
                     //cast(p.get("Animation"), Animation).setBones(multiselectBones);
+
+                    
                     if (p.has("Rigging")) {
                         cast(p.get("Rigging"), Rigging).removeBones(multiselectBones);
+                    }
+                    */
+
+                    if (p.rigging.rigged()) {
+                        p.rigging.removeBones(multiselectBones);
                     }
                     
                 }

@@ -17,9 +17,14 @@ using utilities.TransformExtender;
 
 using Lambda;
 
+import animation.Rigging;
+
 class Polygon extends Visual {
 	public var points:Array<Vector>;
 	var bounds:Rectangle;
+
+	//animation
+	public var rigging : Rigging;
 
 	//debug
 	var sdrwr = new ShapeDrawerLuxe();
@@ -29,6 +34,8 @@ class Polygon extends Visual {
 		super(_options);
 
 		this.points = points;
+
+		this.rigging = new Rigging(this);
 
 		//LISTENERS ( TODO - still not working D: )
 		//pos.listen_x = listen_x;
@@ -63,6 +70,10 @@ class Polygon extends Visual {
 				var child = new Polygon({batcher:_options.batcher, depth:_options.depth, parent:this}, [], jc);
 			}
 
+
+			//trace(jsonObj.rigging);
+			this.rigging = Rigging.createFromJson(this, jsonObj.rigging);
+
 		}
 
 		recenter();
@@ -82,6 +93,17 @@ class Polygon extends Visual {
 		
 	}
 
+	override function update(dt:Float) {
+		//trace("poly update test");
+
+		//YES trying to recreate the mesh every frame slows things down
+		//noticeable at ~100, VERY noticeable over 300
+		//so: could be used for special cases, but that's it
+		//generateMesh();
+
+		if (rigging.rigged()) rigging.morphMesh();
+	}
+	
 	public function generateMesh() {
 		//clear geometry (super INEFFICIENT (probably))
 		var curBatcher = geometry.batchers[0]; //get current batcher?
@@ -273,7 +295,7 @@ class Polygon extends Visual {
 
 	public function drawRectBounds() {
 		var r = getRectBounds();
-		trace(r);
+		//trace(r);
 
 		Luxe.draw.rectangle({
 			x : r.x,
@@ -336,8 +358,10 @@ class Polygon extends Visual {
 			jsonChildren.push( cast(child, Polygon).jsonRepresentation() );
 		}
 
+		var jsonRigging = rigging.jsonRepresentation();
+
 		return {name: jsonName, pos: jsonPos, scale: jsonScale, rotation: jsonRotation, 
-			color: jsonColor, points: jsonPoints, children: jsonChildren};
+			color: jsonColor, points: jsonPoints, rigging: jsonRigging, children: jsonChildren};
 	}
 
 	//should this really be public??
